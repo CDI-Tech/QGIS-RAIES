@@ -1,0 +1,8 @@
+<RCC>
+    <qresource prefix="/plugins/suricates/" >
+        <file>icon.png</file>
+		<file alias="logo_cdi.svg">assets/logo_cdi.svg</file>
+		<file alias="logo_Universite_de_Lille.svg">assets/logo_Universite_de_Lille.svg</file>
+		<file alias="logo_suricates.svg">assets/logo_suricates.svg</file>
+    </qresource>
+</RCC>
