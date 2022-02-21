@@ -14,7 +14,7 @@ This application is a plugins for the software [QGIS](https://qgis.org/): it is 
 
 This application is based on the theorical model and treatment design of [*Eric Masson*](https://pro.univ-lille.fr/eric-masson/) Professor (Associate) of the *Université de Lille*.
 
-This application was ordered by the *Université de Lille* (France), *UFR de Géographie et Aménagement* and funded by ERDF Interreg NWE (RAIES Project 2017-2022).
+This application was ordered by the *Université de Lille* (France), *UFR de Géographie et Aménagement* and funded by ERDF Interreg NWE (SURICATES Project 2017-2023).
 
 This application was initially developed by [Vincent Majorczyk](https://www.linkedin.com/in/vincentmajorczyk/?lipi=urn%3Ali%3Apage%3Ad_flagship3_feed%3BcBKV%2FjGxRH%2BBwA8k716Xjw%3D%3D) ([*CDI-Technologies*](https://www.linkedin.com/company/cdi-technologies)  2020).
 
