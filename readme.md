@@ -1,13 +1,5 @@
 # Suricates plugin for QGIS
 
-> Copyright:  *CDI-Technologies* (2020).
-> Permission is granted to copy, distribute and/or modify this document
-> under the terms of the [GNU Free Documentation License 1.3](fdl-1.3.md),
-> or any later version published by the Free Software Foundation;
-> with no Invariant Sections, no Front-Cover Texts, and no Back-Cover Texts.
-
-The html version of the documentation is located at *doc/html/index.html* of the repository (Cf section 4.4).
-
 ## 1) Application
 
 This application is a plugins for the software [QGIS](https://qgis.org/): it is compatible with the version *3.10.9* (Long Term Release)
@@ -191,3 +183,12 @@ The application code uses the documentation syntax by *Doxygen*. Generate the *h
 - load the *Doxygen* project: *doc/Doxyfile*;
 - on the tab *Run*, click on the button *Run doxygen*;
 - to show documentation on a web browser either click on the button *Show HTML output*, or execute the file *doc/html/index.html*.
+
+> Copyright of this file (readme.md) :
+> Author: Vincent Majorczyk *CDI-Technologies* (2020).
+> License: Permission is granted to copy, distribute and/or modify this document
+> under the terms of the [GNU Free Documentation License 1.3](fdl-1.3.md),
+> or any later version published by the Free Software Foundation;
+> with no Invariant Sections, no Front-Cover Texts, and no Back-Cover Texts.
+
+The html version of the documentation is located at *doc/html/index.html* of the repository (Cf section 4.4).
