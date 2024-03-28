@@ -927,7 +927,7 @@ class ConstraintWidget(QWidget):
         groupc2 = QVBoxLayout()
 
         self.w_farInRB = QRadioButton("Repulsive",self)
-        self.w_nearInRB = QRadioButton("Attrative", self)
+        self.w_nearInRB = QRadioButton("Attractive", self)
         self.w_inInRB = QRadioButton("Included",self)
         self.w_outInRB = QRadioButton("Excluded", self)
         self.w_outInRB.setToolTip("only applies to one selected layer whereas ")
@@ -935,7 +935,7 @@ class ConstraintWidget(QWidget):
         self.w_excludeInRB.setToolTip("applies accross all project layers.")
       
         self.w_farOutRB = QRadioButton("Repulsive",self)
-        self.w_nearOutRB = QRadioButton("Attrative", self)
+        self.w_nearOutRB = QRadioButton("Attractive", self)
         self.w_inOutRB = QRadioButton("Included",self)
         self.w_outOutRB = QRadioButton("Excluded", self)
         self.w_outOutRB.setToolTip("only applies to one selected layer whereas ")
