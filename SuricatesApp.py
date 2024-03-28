@@ -3,7 +3,7 @@
 # @date 2020-2024
 # @version 1.01
 # @author Vincent MAJORCZYK
-# @copyright Copyright 2020-2022 CDI-Technologies (France), all right reserved.
+# @copyright Copyright 2020-2024 CDI-Technologies (France), all right reserved.
 # @par License:
 # code released under GNU General Public License v3
 #
