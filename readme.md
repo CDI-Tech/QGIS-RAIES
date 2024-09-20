@@ -52,9 +52,9 @@ bug tracking: https://github.com/CDI-Tech/QGIS-RAIES/issues
 
 ## 3) Deliverables
 
-- [Deliverable 1-1 Sediment management GIS add-on development and testing](./deliverables/WP T1 Deliverable 1-1 Sediment management GIS add-on development and testing_Final.pdf)
-- [Deliverable 1-2 Sediment management GIS implementation](./deliverables/WP T1 Deliverable 1-2 Sediment management GIS implementation_Final.pdf)
-- [Deliverable 1-3 Identification of 3 New Sediment Use Opportunities](./deliverables/WP T1 Deliverable 1-3 Identification of 3 New Sediment Use Opportunities_Final.pdf)
+- [Deliverable 1-1 Sediment management GIS add-on development and testing](https://github.com/CDI-Tech/QGIS-RAIES/blob/main/deliverables/WP%20T1%20Deliverable%201-1%20Sediment%20management%20GIS%20add-on%20development%20and%20testing_Final.pdf)
+- [Deliverable 1-2 Sediment management GIS implementation](https://github.com/CDI-Tech/QGIS-RAIES/blob/main/deliverables/WP%20T1%20Deliverable%201-2%20Sediment%20management%20GIS%20implementation_Final.pdf)
+- [Deliverable 1-3 Identification of 3 New Sediment Use Opportunities](https://github.com/CDI-Tech/QGIS-RAIES/blob/main/deliverables/WP%20T1%20Deliverable%201-3%20Identification%20of%203%20New%20Sediment%20Use%20Opportunities_Final.pdf)
 
 ## 4) User manual
 
