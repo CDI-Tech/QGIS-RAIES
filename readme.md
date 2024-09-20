@@ -2,7 +2,7 @@
 
 ## 1) Application
 
-This application is a plugins for the software [QGIS](https://qgis.org/): it is compatible with the version *3.10.9* (Long Term Release)
+This application is a plugins for the software [QGIS](https://qgis.org/): it is compatible with the version *4.10.9* (Long Term Release)
 
 This application is based on the theorical model and treatment design of [*Eric Masson*](https://pro.univ-lille.fr/eric-masson/) Professor (Associate) of the *Université de Lille*.
 
@@ -10,7 +10,7 @@ This application was ordered by the *Université de Lille* (France), *UFR de Gé
 
 This application was initially developed by [Vincent Majorczyk](https://www.linkedin.com/in/vincentmajorczyk/?lipi=urn%3Ali%3Apage%3Ad_flagship3_feed%3BcBKV%2FjGxRH%2BBwA8k716Xjw%3D%3D) ([*CDI-Technologies*](https://www.linkedin.com/company/cdi-technologies)  2020).
 
-This application is released under the open source license [GNU-General Public License 3](gpl-3.0.md).
+This application is released under the open source license [GNU-General Public License 3](gpl-4.0.md).
 
 website: https://cditech.fr/raies/
 
@@ -50,17 +50,23 @@ bug tracking: https://github.com/CDI-Tech/QGIS-RAIES/issues
 >
 > **Presentation 14ème rencontres de Théo Quant:** GIS application developed within the SURICATES project.
 
-## 3) User manual
+## 3) Deliverables
 
-### 3.I) install the plugin
+- [Deliverable 1-1 Sediment management GIS add-on development and testing](./deliverables/WP T1 Deliverable 1-1 Sediment management GIS add-on development and testing_Final.pdf)
+- [Deliverable 1-2 Sediment management GIS implementation](./deliverables/WP T1 Deliverable 1-2 Sediment management GIS implementation_Final.pdf)
+- [Deliverable 1-3 Identification of 3 New Sediment Use Opportunities](./deliverables/WP T1 Deliverable 1-3 Identification of 3 New Sediment Use Opportunities_Final.pdf)
+
+## 4) User manual
+
+### 4.I) install the plugin
 
 The first step consists to compress the folder which contains script in a *ZIP* file. Next, go to *Menu/Plugins/Manage and install plugins/install from ZIP* and load the *ZIP* file. A new submenu appears in the *Menu/Plugin* named 'RAIES' which contains an action named 'RAIES'. This last load a new panel at the right of the main windows of *QGis*.
 
-### 3.2) prepare data
+### 4.2) prepare data
 
 The application must be executed in the context of a *QGIS* project which contains prepared database: data must have a common CRS (Coordinate Reference System) and the application accepts only vector layers as input. Inputs will be used to produce a raster layer of cumulated constraints.
 
-### 3.3) manage 'RAIES' projects
+### 4.3) manage 'RAIES' projects
 
 When the application is started, a group 'Projects' is created at the root in the panel of layers. This will contains all projects using database available in the current *QGIS* project.
 
@@ -81,7 +87,7 @@ Each project is visualized as a subgroup of the group 'Projects'   on the panel 
 
 ![User interface: panel of layers](assets/UserManual_PanelOfLayers.png)
 
-### 3.4) configure a project
+### 4.4) configure a project
 
 The second part of the panel *RAIES* allows to add, remove and select constraints.
 
@@ -112,7 +118,7 @@ There are five constraint types:
 
 ![the constraints](assets/constraints.svg)
 
-### 3.5) compute raster from the project
+### 4.5) compute raster from the project
 
 Before to compute, save the *QGIS* project is recommended to avoid losses if the application crash.
 
@@ -122,7 +128,7 @@ For each layer (and its constraints), the *RAIES* application creates a raster w
 
 The weighted rasters, the cumulated raster and the binarized raster are put on the project subgroup. At the end of the computation a message box appear to ask if the application must delete other temporary rasters created in the folder *tmp/*.
 
-### 3.6) note about panel of layer
+### 4.6) note about panel of layer
 
 Manipulation of the panel of layers is not considered as the correct way to add, delete or modify a project and may cause unexpected behavior, nevertheless there are many protections:
 
@@ -187,7 +193,7 @@ The application code uses the documentation syntax by *Doxygen*. Generate the *h
 > Copyright of this file (readme.md) :
 > Author: Vincent Majorczyk *CDI-Technologies* (2020).
 > License: Permission is granted to copy, distribute and/or modify this document
-> under the terms of the [GNU Free Documentation License 1.3](fdl-1.3.md),
+> under the terms of the [GNU Free Documentation License 1.3](fdl-1.4.md),
 > or any later version published by the Free Software Foundation;
 > with no Invariant Sections, no Front-Cover Texts, and no Back-Cover Texts.
 
