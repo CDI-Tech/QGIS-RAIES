@@ -136,9 +136,9 @@ Manipulation of the panel of layers is not considered as the correct way to add,
 - renaming a project with the same name of another is impossible.
 - no founded layers in a project will be indicated in the list of constraints.
 
-## 4) Development
+## 5) Development
 
-### 4.1) general
+### 5.1) general
 
 There are seven classes in this project:
 
@@ -158,7 +158,7 @@ There are two structures in this project:
 
 The function mainProgram is called at when the project is started: it close the previous instance of application if it exists and create a new instance. 
 
-### 4.2) user interface
+### 5.2) user interface
 
 The user interface classes are imbricate as following:
 
@@ -171,7 +171,7 @@ The classes SuricateWidget and SuricateDock are widgets containers and are not i
 
 HeaderWidget aims to manage the projects and ConstrainsWidget manages the constraints of the selected project.
 
-### 4.3) the other classes
+### 5.3) the other classes
 
 SuricateInstance manages three aspects:
 
@@ -181,7 +181,7 @@ SuricateInstance manages three aspects:
 
 SuricateAlgo is a task which computes a raster depending constraints. The input of this class is a list of ConstraintItem whom the attribute 'name' contains the absolute path of the layer. The classes manages layers created during the computation so also files and treewiewer. 
 
-### 4.4) Generate documentation
+### 5.4) Generate documentation
 
 The application code uses the documentation syntax by *Doxygen*. Generate the *html* documentation requires next steps:
 - install [Doxygen](https://www.doxygen.nl/download.html);
