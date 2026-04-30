@@ -12,8 +12,6 @@ This application was initially developed by [Vincent Majorczyk](https://www.link
 
 This application is released under the open source license [GNU-General Public License 3](gpl-4.0.md).
 
-website: https://cditech.fr/raies/
-
 repository: https://github.com/CDI-Tech/QGIS-RAIES
 
 bug tracking: https://github.com/CDI-Tech/QGIS-RAIES/issues
