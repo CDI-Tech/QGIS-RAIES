@@ -1056,7 +1056,7 @@ class ConstraintWidget(QWidget):
             if constraint.typeIn == ConstraintType.Map:
                 Debug.print("threshold:" + str(constraint.priority) + " " + str(constraint.priority))
                 self.w_threshold.blockSignals(True)
-                self.w_threshold.setValue(constraint.priority)
+                self.w_threshold.setValue(int(constraint.priority))
                 self.w_threshold.blockSignals(False)
 
         Debug.end("ConstraintWidget::updateProject")
@@ -1130,8 +1130,8 @@ class ConstraintWidget(QWidget):
             elif current.typeOut == ConstraintType.Excluded: self.w_outOutRB.setChecked(True)
             elif current.typeOut == ConstraintType.Sanctuarized: self.w_excludeOutRB.setChecked(True)
 
-        self.w_buffer.setValue(current.buffer)
-        self.w_priority.setValue(current.priority/10)
+        self.w_buffer.setValue(int(current.buffer))
+        self.w_priority.setValue(int(current.priority/10))
 
         Debug.end("ConstraintWidget::updateOption")
 
