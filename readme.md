@@ -2,7 +2,7 @@
 
 ## 1) Application
 
-This application is a plugins for the software [QGIS](https://qgis.org/): it is compatible with the version *4.10.9* (Long Term Release)
+This application is a plugins for the software [QGIS](https://qgis.org/): it is compatible with the version *3.10.9* (Long Term Release "A Coruna")
 
 This application is based on the theorical model and treatment design of [*Eric Masson*](https://pro.univ-lille.fr/eric-masson/) Professor (Associate) of the *Université de Lille*.
 
