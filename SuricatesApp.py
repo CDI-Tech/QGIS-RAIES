@@ -116,9 +116,6 @@ class ConstraintType(Enum):
     ## @brief far location to the area is prefered
     Repulsive = 2
     ## @brief inside the area
-    Included=3
-    ## @brief uside the area
-    Excluded=4
     Included = 3
     ## @brief outside the area
     Excluded = 4
@@ -463,11 +460,20 @@ class SuricatesAlgo(QgsTask):
     # @param outputName name of the output raster file
     # @return the name of the output raster file
     def invert(self, rasterName, outputName):
-        tmpName = self.getNewFileName('.sdat')
-        if(outputName == None) : outputName = self.getNewFileName('.tif')
-        result = processing.run('saga:invertdatanodata', { 'INPUT': rasterName, 'OUTPUT' : tmpName } )
-        print('invert ' + result['OUTPUT']);
-        return self.convertSagaOutput( result['OUTPUT'], outputName )
+        if (outputName == None): outputName = self.getNewFileName('.tif')
+        # Where A has data (> nodata), output nodata (-9999); where A is nodata, output 0
+        result = processing.run('gdal:rastercalculator', {
+            'BAND_A': 1, 'BAND_B': -1, 'BAND_C': -1, 'BAND_D': -1, 'BAND_E': -1, 'BAND_F': -1,
+            'EXTRA': '',
+            'FORMULA': 'numpy.where(A > -9999, -9999, 0)',
+            'INPUT_A': rasterName,
+            'INPUT_B': None, 'INPUT_C': None, 'INPUT_D': None, 'INPUT_E': None, 'INPUT_F': None,
+            'NO_DATA': -9999,
+            'OPTIONS': '',
+            'OUTPUT': outputName,
+            'RTYPE': 5})
+        print('invert ' + result['OUTPUT'])
+        return result['OUTPUT']
 
     ## @brief convert sdat raster layer to tif
     # @param rasterName name of the input raster file
