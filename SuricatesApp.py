@@ -35,6 +35,7 @@ import copy
 
 import os
 
+
 ## @brief toolbox for debug functions
 #
 # this class aims to debug in the context of the python editor of QGis: there are not evolved tools to facilitate this task.
@@ -102,23 +103,28 @@ class Debug():
                 text = " " + text;
             print(text + " end")
 
+
 ## @brief corresponds to the differents constraint types
 #
 # These constraint types are applyed to inside and outside of the area delimited by layer. There are 5 constraint types, so 25 possible combinations
 # ![constraint combinations](assets\constraints.svg)
 class ConstraintType(Enum):
     ## @brief exclude the area
-    Sanctuarized=0
+    Sanctuarized = 0
     ## @brief near location to the area is prefered
-    Attractive=1
+    Attractive = 1
     ## @brief far location to the area is prefered
-    Repulsive=2
+    Repulsive = 2
     ## @brief inside the area
     Included=3
     ## @brief uside the area
     Excluded=4
+    Included = 3
+    ## @brief outside the area
+    Excluded = 4
     ## @brief global working area of the project
-    Map=5
+    Map = 5
+
 
 ## @brief structure for constraint information
 #
@@ -159,13 +165,15 @@ class ConstraintItem:
     # @param priority priority of the current layer
     # @param typeIn constraint type used inside the zone of the layer
     # @param typeOut constraint type used outside the zone of the layer
-    def __init__(self, name, buffer = 50, priority = 100, typeIn = ConstraintType.Sanctuarized, typeOut = ConstraintType.Sanctuarized):
+    def __init__(self, name, buffer=50, priority=100, typeIn=ConstraintType.Sanctuarized,
+                 typeOut=ConstraintType.Sanctuarized):
         self.name = name
         self.buffer = buffer
         self.priority = priority
         self.typeIn = typeIn
         self.typeOut = typeOut
         self.exists = True
+
 
 ## @brief task to create a raser from constraints
 #
@@ -296,11 +304,11 @@ class SuricatesAlgo(QgsTask):
                 if i.exists():
                     Debug.print("delete " + i.absoluteFilePath())
                     QFile.remove(i.absoluteFilePath())
-                    
+
         self.createdFiles = list()
         Debug.begin("SuricatesAlgo::deleteTmpFile")
         return
-    
+
     ## @brief delete temporary path
     def deleteAllTmpFile(self):
         Debug.begin("SuricatesAlgo::deleteAllTmpFile")
@@ -317,12 +325,15 @@ class SuricatesAlgo(QgsTask):
     # @return the extent formated string: `xMin, xMax, yMin, yMax [CRS]`
     def setExtentString(self, layerName):
         rlayer = QgsVectorLayer(layerName, "tmp")
-        if(not rlayer.isValid()):
-           rlayer = QgsRasterLayer(layerName, "tmp")
+        if (not rlayer.isValid()):
+            rlayer = QgsRasterLayer(layerName, "tmp")
 
-        if(not rlayer.isValid()):
-           self.extent = None
-        else: self.extent = str(rlayer.extent().xMinimum()-100) + ',' + str(rlayer.extent().xMaximum()+100) + ',' + str(rlayer.extent().yMaximum()-100)	 + ',' + str(rlayer.extent().yMinimum()+100) + ' [' + rlayer.crs().authid() + ']'
+        if (not rlayer.isValid()):
+            self.extent = None
+        else:
+            self.extent = str(rlayer.extent().xMinimum() - 100) + ',' + str(
+                rlayer.extent().xMaximum() + 100) + ',' + str(rlayer.extent().yMaximum() - 100) + ',' + str(
+                rlayer.extent().yMinimum() + 100) + ' [' + rlayer.crs().authid() + ']'
         return self.extent
 
     ## @brief create a random name for temporary file
@@ -333,8 +344,9 @@ class SuricatesAlgo(QgsTask):
     #
     def getNewFileName(self, extension):
         self.counter = self.counter + 1
-        self.setProgress(100.0 * float(self.counter) / (self.maxprogress+1))
-        filename = QDir(self.tmpPath).filePath('{}-{}{:02d}-{}{}'.format(self.date, self.time, self.counter, QUuid.createUuid().toString(), extension))
+        self.setProgress(100.0 * float(self.counter) / (self.maxprogress + 1))
+        filename = QDir(self.tmpPath).filePath(
+            '{}-{}{:02d}-{}{}'.format(self.date, self.time, self.counter, QUuid.createUuid().toString(), extension))
         self.createdFiles.append(filename)
         return filename
 
@@ -346,15 +358,15 @@ class SuricatesAlgo(QgsTask):
     # @note return value may be different from the property *outputName* if the value of *outputName* is None
     def bufferVector(self, vectorName, outputName, distance):
         Debug.begin("SuricatesAlgo:bufferVector")
-        if(outputName == None) : outputName = self.getNewFileName('.shp')
+        if (outputName == None): outputName = self.getNewFileName('.shp')
         result = processing.run("native:buffer", {'INPUT': vectorName,
-                'DISTANCE': distance,
-                'SEGMENTS': 5,
-                'DISSOLVE': False,
-                'END_CAP_STYLE': 0,
-                'JOIN_STYLE': 0,
-                'MITER_LIMIT': 2,
-                'OUTPUT': outputName})
+                                                  'DISTANCE': distance,
+                                                  'SEGMENTS': 5,
+                                                  'DISSOLVE': False,
+                                                  'END_CAP_STYLE': 0,
+                                                  'JOIN_STYLE': 0,
+                                                  'MITER_LIMIT': 2,
+                                                  'OUTPUT': outputName})
         print('bufferVector ' + outputName)
         Debug.end("SuricatesAlgo:bufferVector")
         return outputName
@@ -365,21 +377,21 @@ class SuricatesAlgo(QgsTask):
     # @return the name of the output raster file
     # @note return value may be different from the property *outputName* if the value of *outputName* is `TEMPORARY_OUTPUT` or None
     def rasterize(self, vectorName, outputName):
-        if(outputName == None) : outputName = self.getNewFileName('.tif')
-        result = processing.run("gdal:rasterize", { 'BURN' : 0,
-                'DATA_TYPE' : 5,
-                'EXTENT' : self.extent,
-                'EXTRA' : '',
-                'FIELD' : None,
-                'HEIGHT' : 100,
-                'INIT' : None,
-                'INPUT' : vectorName,
-                'INVERT' : False,
-                'NODATA' : -9999,
-                'OPTIONS' : '',
-                'OUTPUT' : outputName,
-                'UNITS' : 1,
-                'WIDTH' : 100 })
+        if (outputName == None): outputName = self.getNewFileName('.tif')
+        result = processing.run("gdal:rasterize", {'BURN': 0,
+                                                   'DATA_TYPE': 5,
+                                                   'EXTENT': self.extent,
+                                                   'EXTRA': '',
+                                                   'FIELD': None,
+                                                   'HEIGHT': 100,
+                                                   'INIT': None,
+                                                   'INPUT': vectorName,
+                                                   'INVERT': False,
+                                                   'NODATA': -9999,
+                                                   'OPTIONS': '',
+                                                   'OUTPUT': outputName,
+                                                   'UNITS': 1,
+                                                   'WIDTH': 100})
         print('rasterize ' + result['OUTPUT'])
         return result['OUTPUT']
 
@@ -392,14 +404,14 @@ class SuricatesAlgo(QgsTask):
     # @note return value may be different from the property *outputName* if the value of *outputName* is `TEMPORARY_OUTPUT` or None
     def rasterizeWithBuffer(self, vectorName, outputName, buffer, saveExtent):
         Debug.begin("SuricatesAlgo:rasterizeWithBuffer")
-        if(buffer > 0):
+        if (buffer > 0):
             tmp = self.bufferVector(vectorName, None, buffer)
-            if(saveExtent): self.setExtentString(tmp)
+            if (saveExtent): self.setExtentString(tmp)
             r = self.rasterize(tmp, outputName)
             Debug.end("SuricatesAlgo:rasterizeWithBuffer (1)")
             return r
         else:
-            if(saveExtent): self.setExtentString(vectorName)
+            if (saveExtent): self.setExtentString(vectorName)
             r = self.rasterize(vectorName, outputName)
             Debug.end("SuricatesAlgo:rasterizeWithBuffer (2)")
             return r
@@ -409,18 +421,18 @@ class SuricatesAlgo(QgsTask):
     # @param outputName name of the output raster file
     # @return the name of the output raster file
     def proximity(self, rasterName, outputName):
-        if(outputName == None) : outputName = self.getNewFileName('.tif')
-        result = processing.run("gdal:proximity", { 'BAND' : 1,
-              'DATA_TYPE' : 5,
-              'EXTRA' : '',
-              'INPUT' : rasterName,
-              'MAX_DISTANCE' : 0,
-              'NODATA' : -9999,
-              'OPTIONS' : '',
-              'OUTPUT' : outputName,
-              'REPLACE' : 0,
-              'UNITS' : 1,
-              'VALUES' : '0, 1' })
+        if (outputName == None): outputName = self.getNewFileName('.tif')
+        result = processing.run("gdal:proximity", {'BAND': 1,
+                                                   'DATA_TYPE': 5,
+                                                   'EXTRA': '',
+                                                   'INPUT': rasterName,
+                                                   'MAX_DISTANCE': 0,
+                                                   'NODATA': -9999,
+                                                   'OPTIONS': '',
+                                                   'OUTPUT': outputName,
+                                                   'REPLACE': 0,
+                                                   'UNITS': 1,
+                                                   'VALUES': '0, 1'})
         print('proximity ' + result['OUTPUT']);
         return result['OUTPUT']
 
@@ -430,22 +442,23 @@ class SuricatesAlgo(QgsTask):
     # @param outputName name of the output raster file
     # @return the name of the output raster file
     def clip(self, rasterName, clipRasterName, outputName):
-        if(outputName == None) : outputName = self.getNewFileName('.tif')
+        if (outputName == None): outputName = self.getNewFileName('.tif')
         print("clip-start" + rasterName + " " + clipRasterName + " " + outputName)
-        result = processing.run("gdal:rastercalculator", { 'BAND_A' : 1, 'BAND_B' : 1, 'BAND_C' : -1, 'BAND_D' : -1, 'BAND_E' : -1, 'BAND_F' : -1,
-                'EXTRA' : '',
-                'FORMULA' : 'B',
-                'INPUT_A' : clipRasterName,
-                'INPUT_B' : rasterName,
-                'INPUT_C' : None, 'INPUT_D' : None, 'INPUT_E' : None, 'INPUT_F' : None,
-                'NO_DATA' : -9999,
-                'OPTIONS' : '',
-                'OUTPUT' : outputName,
-                'RTYPE' : 5 })
+        result = processing.run("gdal:rastercalculator",
+                                {'BAND_A': 1, 'BAND_B': 1, 'BAND_C': -1, 'BAND_D': -1, 'BAND_E': -1, 'BAND_F': -1,
+                                 'EXTRA': '',
+                                 'FORMULA': 'B',
+                                 'INPUT_A': clipRasterName,
+                                 'INPUT_B': rasterName,
+                                 'INPUT_C': None, 'INPUT_D': None, 'INPUT_E': None, 'INPUT_F': None,
+                                 'NO_DATA': -9999,
+                                 'OPTIONS': '',
+                                 'OUTPUT': outputName,
+                                 'RTYPE': 5})
         print('clip ' + result['OUTPUT']);
         return result['OUTPUT']
 
-    ## @brief invert data/nodata cells of a	 raster layer
+    ## @brief invert data/nodata cells of a raster layer
     # @param rasterName name of the input raster file
     # @param outputName name of the output raster file
     # @return the name of the output raster file
@@ -461,15 +474,15 @@ class SuricatesAlgo(QgsTask):
     # @param outputName name of the output raster file
     # @return the name of the output raster file
     def convertSagaOutput(self, rasterName, outputName):
-        if(outputName == None) : outputName = self.getNewFileName('.tif')
-        result = processing.run("gdal:translate", { 'COPY_SUBDATASETS' : False,
-                'DATA_TYPE' : 6,
-                'EXTRA' : '',
-                'INPUT' : rasterName,
-                'NODATA' : -9999,
-                'OPTIONS' : '',
-                'OUTPUT' : outputName,
-                'TARGET_CRS' : None } )
+        if (outputName == None): outputName = self.getNewFileName('.tif')
+        result = processing.run("gdal:translate", {'COPY_SUBDATASETS': False,
+                                                   'DATA_TYPE': 6,
+                                                   'EXTRA': '',
+                                                   'INPUT': rasterName,
+                                                   'NODATA': -9999,
+                                                   'OPTIONS': '',
+                                                   'OUTPUT': outputName,
+                                                   'TARGET_CRS': None})
         print('convertSagaOutput' + result['OUTPUT']);
         return result['OUTPUT']
 
@@ -479,15 +492,15 @@ class SuricatesAlgo(QgsTask):
     # @param outputName name of the output raster file
     # @return the name of the output raster file
     def mergeLayers(self, rasterName1, rasterName2, outputName):
-        if(outputName == None) : outputName = self.getNewFileName('.tif')
-        result = processing.run("gdal:merge", { 'DATA_TYPE' : 5, 'EXTRA' : '',
-                'INPUT' : [rasterName1,rasterName2],
-                'NODATA_INPUT' : -9999,
-                'NODATA_OUTPUT' : -9999,
-                'OPTIONS' : '',
-                'OUTPUT' : outputName,
-                'PCT' : False,
-                'SEPARATE' : False } )
+        if (outputName == None): outputName = self.getNewFileName('.tif')
+        result = processing.run("gdal:merge", {'DATA_TYPE': 5, 'EXTRA': '',
+                                               'INPUT': [rasterName1, rasterName2],
+                                               'NODATA_INPUT': -9999,
+                                               'NODATA_OUTPUT': -9999,
+                                               'OPTIONS': '',
+                                               'OUTPUT': outputName,
+                                               'PCT': False,
+                                               'SEPARATE': False})
         print('mergeLayers' + result['OUTPUT']);
         return result['OUTPUT']
 
@@ -498,11 +511,11 @@ class SuricatesAlgo(QgsTask):
     # @param coef maximum value
     # @return the name of the output raster file
     def normalizeRaster(self, rasterName, outputName, invert, coef):
-        if(outputName == None) : outputName = self.getNewFileName('.tif')
+        if (outputName == None): outputName = self.getNewFileName('.tif')
 
         layer = QgsRasterLayer(rasterName, "tmp")
-        if(not layer.isValid()):
-           return None
+        if (not layer.isValid()):
+            return None
 
         provider = layer.dataProvider()
 
@@ -510,24 +523,27 @@ class SuricatesAlgo(QgsTask):
         min = stats.minimumValue
         max = stats.maximumValue
         print("s" + str(min) + " " + str(max))
-        if max-min == 0:
-            if min != 0: min = 0
-            else: max = 1
+        if max - min == 0:
+            if min != 0:
+                min = 0
+            else:
+                max = 1
         print("e" + str(min) + " " + str(max))
 
-        formula = '(A-{})/({}-{})'.format(min,max,min)
-        if(invert): formula = '1-' + formula
+        formula = '(A-{})/({}-{})'.format(min, max, min)
+        if (invert): formula = '1-' + formula
         formula = '(' + formula + ')*' + str(coef)
 
-        result = processing.run("gdal:rastercalculator", { 'BAND_A' : 1, 'BAND_B' : 1, 'BAND_C' : -1, 'BAND_D' : -1, 'BAND_E' : -1, 'BAND_F' : -1,
-                'EXTRA' : '',
-                'FORMULA' : formula,
-                'INPUT_A' : rasterName,
-                'INPUT_B' : None,'INPUT_C' : None, 'INPUT_D' : None, 'INPUT_E' : None, 'INPUT_F' : None,
-                'NO_DATA' : -9999,
-                'OPTIONS' : '',
-                'OUTPUT' : outputName,
-                'RTYPE' : 5 })
+        result = processing.run("gdal:rastercalculator",
+                                {'BAND_A': 1, 'BAND_B': 1, 'BAND_C': -1, 'BAND_D': -1, 'BAND_E': -1, 'BAND_F': -1,
+                                 'EXTRA': '',
+                                 'FORMULA': formula,
+                                 'INPUT_A': rasterName,
+                                 'INPUT_B': None, 'INPUT_C': None, 'INPUT_D': None, 'INPUT_E': None, 'INPUT_F': None,
+                                 'NO_DATA': -9999,
+                                 'OPTIONS': '',
+                                 'OUTPUT': outputName,
+                                 'RTYPE': 5})
         print('normalizeRaster ' + result['OUTPUT']);
         return result['OUTPUT']
 
@@ -537,24 +553,25 @@ class SuricatesAlgo(QgsTask):
     # @param coef threshold value
     # @return the name of the output raster file
     def thresholdRaster(self, rasterName, outputName, coef):
-        if(outputName == None) : outputName = self.getNewFileName('.tif')
+        if (outputName == None): outputName = self.getNewFileName('.tif')
 
         formula = '(A<{0})*A+(A>={1})*-9999'
         print("formula")
         print(formula)
         print(coef)
-        formula = formula.format(coef,coef)
+        formula = formula.format(coef, coef)
         print(formula)
 
-        result = processing.run("gdal:rastercalculator", { 'BAND_A' : 1, 'BAND_B' : 1, 'BAND_C' : -1, 'BAND_D' : -1, 'BAND_E' : -1, 'BAND_F' : -1,
-                'EXTRA' : '',
-                'FORMULA' : formula,
-                'INPUT_A' : rasterName,
-                'INPUT_B' : None,'INPUT_C' : None, 'INPUT_D' : None, 'INPUT_E' : None, 'INPUT_F' : None,
-                'NO_DATA' : -9999,
-                'OPTIONS' : '',
-                'OUTPUT' : outputName,
-                'RTYPE' : 5 })
+        result = processing.run("gdal:rastercalculator",
+                                {'BAND_A': 1, 'BAND_B': 1, 'BAND_C': -1, 'BAND_D': -1, 'BAND_E': -1, 'BAND_F': -1,
+                                 'EXTRA': '',
+                                 'FORMULA': formula,
+                                 'INPUT_A': rasterName,
+                                 'INPUT_B': None, 'INPUT_C': None, 'INPUT_D': None, 'INPUT_E': None, 'INPUT_F': None,
+                                 'NO_DATA': -9999,
+                                 'OPTIONS': '',
+                                 'OUTPUT': outputName,
+                                 'RTYPE': 5})
         print('thresholdRaster ' + result['OUTPUT']);
         return result['OUTPUT']
 
@@ -568,10 +585,9 @@ class SuricatesAlgo(QgsTask):
     # @return the name of the output raster file
     def calculateTheConstraintOfProximity(self, layerName, invertedLayerName, mapName, outputName, invert, coef):
         RasterProximity = self.proximity(layerName, None)
-        RasterProximityClip1 = self.clip(RasterProximity,mapName,None)
-        RasterProximityClip2 = self.clip(RasterProximityClip1,invertedLayerName,None)
+        RasterProximityClip1 = self.clip(RasterProximity, mapName, None)
+        RasterProximityClip2 = self.clip(RasterProximityClip1, invertedLayerName, None)
         return self.normalizeRaster(RasterProximityClip2, None, invert, coef)
-
 
     ## @brief calculate constraints with constant
     # @param layerName rasterized input layer
@@ -602,7 +618,7 @@ class SuricatesAlgo(QgsTask):
         Debug.begin("SuricateAlgo::cummulateLayers (nb layer:" + str(len(listLayerName)) + ")")
         count = len(listLayerName)
 
-        if(count == 0):
+        if (count == 0):
             Debug.end("SuricateAlgo::cummulateLayers (1)")
             return None;
 
@@ -613,37 +629,40 @@ class SuricatesAlgo(QgsTask):
             print('cummulateLayers-A ' + A)
             B = C = D = E = F = G = None
             formula = 'A'
-            if(i < count):
+            if (i < count):
                 B = listLayerName[i]
                 formula += '+B'
                 print('cummulateLayers-B ' + B)
-            if(i+1 < count):
-                C = listLayerName[i+1]
+            if (i + 1 < count):
+                C = listLayerName[i + 1]
                 formula += '+C'
                 print('cummulateLayers-C ' + C)
-            if(i+2 < count):
-                D = listLayerName[i+2]
+            if (i + 2 < count):
+                D = listLayerName[i + 2]
                 formula += '+D'
                 print('cummulateLayers-D ' + D)
-            if(i+3 < count):
-                E = listLayerName[i+3]
+            if (i + 3 < count):
+                E = listLayerName[i + 3]
                 formula += '+E'
                 print('cummulateLayers-E ' + E)
-            if(i+4 < count):
-                F = listLayerName[i+4]
+            if (i + 4 < count):
+                F = listLayerName[i + 4]
                 formula += '+F'
                 print('cummulateLayers-F ' + F)
 
-            if(i+5 < count or outputName == None): tmp = self.getNewFileName('.tif')
-            else: tmp = outputName
-            result = processing.run("gdal:rastercalculator", { 'BAND_A' : 1, 'BAND_B' : 1, 'BAND_C' : 1, 'BAND_D' : 1, 'BAND_E' : 1, 'BAND_F' : 1,
-                    'EXTRA' : '',
-                    'FORMULA' : formula,
-                    'INPUT_A' : A, 'INPUT_B' : B,'INPUT_C' : C, 'INPUT_D' : D, 'INPUT_E' : E, 'INPUT_F' : F,
-                    'NO_DATA' : -9999,
-                    'OPTIONS' : '',
-                    'OUTPUT' : tmp,
-                    'RTYPE' : 5 })
+            if (i + 5 < count or outputName == None):
+                tmp = self.getNewFileName('.tif')
+            else:
+                tmp = outputName
+            result = processing.run("gdal:rastercalculator",
+                                    {'BAND_A': 1, 'BAND_B': 1, 'BAND_C': 1, 'BAND_D': 1, 'BAND_E': 1, 'BAND_F': 1,
+                                     'EXTRA': '',
+                                     'FORMULA': formula,
+                                     'INPUT_A': A, 'INPUT_B': B, 'INPUT_C': C, 'INPUT_D': D, 'INPUT_E': E, 'INPUT_F': F,
+                                     'NO_DATA': -9999,
+                                     'OPTIONS': '',
+                                     'OUTPUT': tmp,
+                                     'RTYPE': 5})
             baseLayer = result['OUTPUT']
             print('cummulateLayers-tmp:' + baseLayer)
             print(formula)
@@ -671,10 +690,12 @@ class SuricatesAlgo(QgsTask):
                 continue
 
             # rasterizewithbuffer
-            if(constraint.buffer == 0): self.maxprogress += 1
-            else: self.maxprogress += 2
+            if (constraint.buffer == 0):
+                self.maxprogress += 1
+            else:
+                self.maxprogress += 2
             # invert
-            if(constraint.typeIn != ConstraintType.Map):
+            if (constraint.typeIn != ConstraintType.Map):
                 self.maxprogress += 2
 
             # specific computations
@@ -707,16 +728,16 @@ class SuricatesAlgo(QgsTask):
         if constraintType == ConstraintType.Attractive:
             return self.calculateTheConstraintOfProximity(rasterLayer, rasterLayer_1, rasterMap, None, False, priority)
         if constraintType == ConstraintType.Excluded:
-            return self.calculateTheConstraintWithConstant(rasterLayer_1,rasterMap,None,priority)
+            return self.calculateTheConstraintWithConstant(rasterLayer_1, rasterMap, None, priority)
         if constraintType == ConstraintType.Included:
-            return self.calculateTheConstraintWithConstant(rasterLayer_1,rasterMap,None,0)
+            return self.calculateTheConstraintWithConstant(rasterLayer_1, rasterMap, None, 0)
         return None
 
     ## @brief method used when task started: create raster which corresponds to the list of constraints
     # @return true if done
     def run(self):
         Debug.begin("SuricatesAlgo:run")
-        
+
         self.calculateMaxProgress()
 
         rasterMap = None
@@ -727,17 +748,17 @@ class SuricatesAlgo(QgsTask):
             Debug.print("It is the map? " + constraint.name)
             if constraint.typeIn == ConstraintType.Map:
                 rasterMap = self.rasterizeWithBuffer(constraint.name, None, constraint.buffer, True)
-                threshold = float(constraint.priority)/100.0
+                threshold = float(constraint.priority) / 100.0
                 self.createdFiles.remove(rasterMap)
                 Debug.print("- Yes")
                 Debug.print("- result: " + rasterMap)
                 Debug.print("- threshold: " + str(threshold))
 
-        if(rasterMap == None):
+        if (rasterMap == None):
             Debug.end("SuricatesAlgo:run (error 1)")
             return False
 
-        layers = list() # list of layer to merge
+        layers = list()  # list of layer to merge
 
         # for each constraint create raster layer
         self.outputs = dict()
@@ -756,14 +777,16 @@ class SuricatesAlgo(QgsTask):
             rasterLayer_1 = self.invert(rasterLayer, None)
 
             print("begin raster out")
-            outside = self.computeRaster(constraint.typeOut, constraint.priority, rasterMap, rasterLayer, rasterLayer_1) # create layer for inside area
+            outside = self.computeRaster(constraint.typeOut, constraint.priority, rasterMap, rasterLayer,
+                                         rasterLayer_1)  # create layer for inside area
             print("begin raster in")
-            inside = self.computeRaster(constraint.typeIn, constraint.priority, rasterMap, rasterLayer_1, rasterLayer) # create layer for outside area
+            inside = self.computeRaster(constraint.typeIn, constraint.priority, rasterMap, rasterLayer_1,
+                                        rasterLayer)  # create layer for outside area
             print("end")
-            
-            if(inside == None):
+
+            if (inside == None):
                 outputlayer = outside
-            elif(outside == None):
+            elif (outside == None):
                 outputlayer = inside
             else:
                 outputlayer = self.mergeLayers(inside, outside, None)
@@ -771,22 +794,21 @@ class SuricatesAlgo(QgsTask):
             bn = QFileInfo(constraint.name).baseName()
             self.outputs[bn] = outputlayer
             layers.append(outputlayer)
-            
-            print("before remove" + str( len(self.createdFiles)))
+
+            print(f"before remove {str(len(self.createdFiles))}")
             self.createdFiles.remove(outputlayer)
-            print("before remove" + str( len(self.createdFiles)))
-            
+            print(f"before remove {str(len(self.createdFiles))}")
+
             if self.deleteTmp:
                 self.deleteTmpFile()
-            print("after remove" + str( len(self.createdFiles)))
+            print(f"after remove {str(len(self.createdFiles))}")
 
         rasterCumul = self.cummulateLayers(layers, None)
-        rasterCumulFinal = self.normalizeRaster(rasterCumul,None,False,1)
+        rasterCumulFinal = self.normalizeRaster(rasterCumul, None, False, 1)
         rasterCumulFinal2 = self.thresholdRaster(rasterCumulFinal, None, threshold)
 
-
         self.outputs["raster"] = rasterCumulFinal
-        self.outputs["threshold("+ str(threshold) + ")"] = rasterCumulFinal2
+        self.outputs[f"threshold({str(threshold)})"] = rasterCumulFinal2
 
         self.setProgress(100)
         Debug.end("SuricatesAlgo:run")
@@ -798,16 +820,18 @@ class SuricatesAlgo(QgsTask):
     ## - display a message to announce success or error during task;
     ## - copy many temporary files (layer raster, normalized cumulation of raster and a thresholded version of this one;
     ## - display a message bow which asks if temporary files must be removed;
-    def finished(self,result):
+    def finished(self, result):
         Debug.begin("SuricatesAlgo::finished")
-        if result: self.suricatesInstance.iface.messageBar().pushMessage("Success", "Rasters Created", level=Qgis.Success)
-        else: self.suricatesInstance.iface.messageBar().pushMessage("Error", "Rasters Creation failled", level=Qgis.Critical)
+        if result:
+            self.suricatesInstance.iface.messageBar().pushMessage("Success", "Rasters Created", level=Qgis.Success)
+        else:
+            self.suricatesInstance.iface.messageBar().pushMessage("Error", "Rasters Creation failled",
+                                                                  level=Qgis.Critical)
 
         if result:
             root = self.suricatesInstance.getProject(self.projectName);
 
             for name, filename in self.outputs.items():
-
                 dir = QDir(QgsProject.instance().absolutePath())
                 filename2 = QFileInfo(filename).fileName()
 
@@ -819,12 +843,13 @@ class SuricatesAlgo(QgsTask):
                 QgsProject.instance().addMapLayer(layer_shp, False)
                 root.addLayer(layer_shp)
 
-        self.suricatesInstance.tasks.remove( self )
-        
-        #◙if self.deleteTmp:
+        self.suricatesInstance.tasks.remove(self)
+
+        # ◙if self.deleteTmp:
         #    self.deleteAllTmpFile()
 
         Debug.end("SuricatesAlgo::finished")
+
 
 ## @brief widget which contains parameter interface for constrains configuration
 #
@@ -910,33 +935,33 @@ class ConstraintWidget(QWidget):
 
         selectl = QVBoxLayout(self)
         selectl2 = QHBoxLayout(self)
-        self.w_buttonAdd = QPushButton("Add",self)
-        self.w_buttonDel = QPushButton("Del",self)
+        self.w_buttonAdd = QPushButton("Add", self)
+        self.w_buttonDel = QPushButton("Del", self)
         selectl2.addWidget(self.w_buttonAdd)
         selectl2.addWidget(self.w_buttonDel)
         selectl.addLayout(selectl2)
 
-        self.w_listConstraints	= QTreeWidget(self)
-        self.w_listConstraints.setHeaderLabels(["Name","Inside","Outside", "Distance","Weight"])
+        self.w_listConstraints = QTreeWidget(self)
+        self.w_listConstraints.setHeaderLabels(["Name", "Inside", "Outside", "Distance", "Weight"])
         selectl.addWidget(self.w_listConstraints)
 
-        groupw = QGroupBox("Constraints on selected layer:",self)
+        groupw = QGroupBox("Constraints on selected layer:", self)
         groupl = QVBoxLayout()
         groupc = QHBoxLayout()
         groupc1 = QVBoxLayout()
         groupc2 = QVBoxLayout()
 
-        self.w_farInRB = QRadioButton("Repulsive",self)
+        self.w_farInRB = QRadioButton("Repulsive", self)
         self.w_nearInRB = QRadioButton("Attractive", self)
-        self.w_inInRB = QRadioButton("Included",self)
+        self.w_inInRB = QRadioButton("Included", self)
         self.w_outInRB = QRadioButton("Excluded", self)
         self.w_outInRB.setToolTip("only applies to one selected layer whereas ")
         self.w_excludeInRB = QRadioButton("Sanctuarized", self)
         self.w_excludeInRB.setToolTip("applies accross all project layers.")
-      
-        self.w_farOutRB = QRadioButton("Repulsive",self)
+
+        self.w_farOutRB = QRadioButton("Repulsive", self)
         self.w_nearOutRB = QRadioButton("Attractive", self)
-        self.w_inOutRB = QRadioButton("Included",self)
+        self.w_inOutRB = QRadioButton("Included", self)
         self.w_outOutRB = QRadioButton("Excluded", self)
         self.w_outOutRB.setToolTip("only applies to one selected layer whereas ")
         self.w_excludeOutRB = QRadioButton("Sanctuarized", self)
@@ -1015,8 +1040,10 @@ class ConstraintWidget(QWidget):
     ## @brief set the current project and update the list of constraints
     # @param name of the current project
     def setProject(self, name):
-        if name != None: Debug.begin("ConstraintWidget::setProject:" + name)
-        else: Debug.begin("ConstraintWidget::setProject: (Empty project)")
+        if name != None:
+            Debug.begin("ConstraintWidget::setProject:" + name)
+        else:
+            Debug.begin("ConstraintWidget::setProject: (Empty project)")
 
         self.currentProject = name
         self.updateProject()
@@ -1032,7 +1059,8 @@ class ConstraintWidget(QWidget):
             self.setEnabled(False)
             Debug.end("ConstraintWidget::updateProject (Empty project)")
             return;
-        else: self.setEnabled(True)
+        else:
+            self.setEnabled(True)
 
         project = self.suricates.getProject(self.currentProject)
         if project == None:
@@ -1049,9 +1077,11 @@ class ConstraintWidget(QWidget):
         self.w_listConstraints.clear()
         # current code here
         for constraint in constraintsList:
-            twi = QTreeWidgetItem([constraint.name, SuricatesInstance.ConstraintTypeToString(constraint.typeIn), SuricatesInstance.ConstraintTypeToString(constraint.typeOut), str(constraint.buffer), str(constraint.priority)])
+            twi = QTreeWidgetItem([constraint.name, SuricatesInstance.ConstraintTypeToString(constraint.typeIn),
+                                   SuricatesInstance.ConstraintTypeToString(constraint.typeOut), str(constraint.buffer),
+                                   str(constraint.priority)])
             if not constraint.exists:
-                twi.setIcon(0,QIcon(":/images/themes/default/mActionRemove.svg"))
+                twi.setIcon(0, QIcon(":/images/themes/default/mActionRemove.svg"))
             self.w_listConstraints.addTopLevelItem(twi)
             if constraint.typeIn == ConstraintType.Map:
                 Debug.print("threshold:" + str(constraint.priority) + " " + str(constraint.priority))
@@ -1095,7 +1125,7 @@ class ConstraintWidget(QWidget):
             self.w_inInRB.setEnabled(False)
             self.w_outInRB.setEnabled(False)
             self.w_excludeInRB.setEnabled(False)
-            
+
             self.w_nearInRB.setChecked(False)
             self.w_farInRB.setChecked(False)
             self.w_inInRB.setChecked(False)
@@ -1118,20 +1148,30 @@ class ConstraintWidget(QWidget):
             self.w_priority.setEnabled(False)
         else:
             self.setOptionEnabled(True)
-            if current.typeIn == ConstraintType.Attractive: self.w_nearInRB.setChecked(True)
-            elif current.typeIn == ConstraintType.Repulsive: self.w_farInRB.setChecked(True)
-            elif current.typeIn == ConstraintType.Included: self.w_inInRB.setChecked(True)
-            elif current.typeIn == ConstraintType.Excluded: self.w_outInRB.setChecked(True)
-            elif current.typeIn == ConstraintType.Sanctuarized: self.w_excludeInRB.setChecked(True)
+            if current.typeIn == ConstraintType.Attractive:
+                self.w_nearInRB.setChecked(True)
+            elif current.typeIn == ConstraintType.Repulsive:
+                self.w_farInRB.setChecked(True)
+            elif current.typeIn == ConstraintType.Included:
+                self.w_inInRB.setChecked(True)
+            elif current.typeIn == ConstraintType.Excluded:
+                self.w_outInRB.setChecked(True)
+            elif current.typeIn == ConstraintType.Sanctuarized:
+                self.w_excludeInRB.setChecked(True)
 
-            if current.typeOut == ConstraintType.Attractive: self.w_nearOutRB.setChecked(True)
-            elif current.typeOut == ConstraintType.Repulsive: self.w_farOutRB.setChecked(True)
-            elif current.typeOut == ConstraintType.Included: self.w_inOutRB.setChecked(True)
-            elif current.typeOut == ConstraintType.Excluded: self.w_outOutRB.setChecked(True)
-            elif current.typeOut == ConstraintType.Sanctuarized: self.w_excludeOutRB.setChecked(True)
+            if current.typeOut == ConstraintType.Attractive:
+                self.w_nearOutRB.setChecked(True)
+            elif current.typeOut == ConstraintType.Repulsive:
+                self.w_farOutRB.setChecked(True)
+            elif current.typeOut == ConstraintType.Included:
+                self.w_inOutRB.setChecked(True)
+            elif current.typeOut == ConstraintType.Excluded:
+                self.w_outOutRB.setChecked(True)
+            elif current.typeOut == ConstraintType.Sanctuarized:
+                self.w_excludeOutRB.setChecked(True)
 
         self.w_buffer.setValue(int(current.buffer))
-        self.w_priority.setValue(int(current.priority/10))
+        self.w_priority.setValue(int(current.priority / 10))
 
         Debug.end("ConstraintWidget::updateOption")
 
@@ -1205,17 +1245,17 @@ class ConstraintWidget(QWidget):
 
         for constraint in constraintsList:
             layer = self.suricates.getLayer(project, constraint.name)
-            if(layer != None and layer.layer() != None):
+            if (layer != None and layer.layer() != None):
                 constraint.name = layer.layer().source()
                 intputList.append(constraint)
 
-
         a = SuricatesAlgo(intputList, self.currentProject, self.suricates)
-        a.deleteTmp = QMessageBox.question(None, "delete temporary files?", "do you want delete temporary file?") == QMessageBox.StandardButton.Yes
-        
-        self.suricates.tasks.append( a )
-        #a.run()
-        #a.finished(True)
+        a.deleteTmp = QMessageBox.question(None, "delete temporary files?",
+                                           "do you want delete temporary file?") == QMessageBox.StandardButton.Yes
+
+        self.suricates.tasks.append(a)
+        # a.run()
+        # a.finished(True)
         QgsApplication.taskManager().addTask(a)
 
         Debug.end("ConstraintWidget::onCompute")
@@ -1226,21 +1266,32 @@ class ConstraintWidget(QWidget):
         Debug.begin("ConstraintWidget::onSave")
         if not self.w_priority.isEnabled():
             typeIn = ConstraintType.Map
-        elif self.w_nearInRB.isChecked(): typeIn = ConstraintType.Attractive
-        elif self.w_farInRB.isChecked(): typeIn = ConstraintType.Repulsive
-        elif self.w_inInRB.isChecked(): typeIn = ConstraintType.Included
-        elif self.w_outInRB.isChecked(): typeIn = ConstraintType.Excluded
-        elif self.w_excludeInRB.isChecked(): typeIn = ConstraintType.Sanctuarized
+        elif self.w_nearInRB.isChecked():
+            typeIn = ConstraintType.Attractive
+        elif self.w_farInRB.isChecked():
+            typeIn = ConstraintType.Repulsive
+        elif self.w_inInRB.isChecked():
+            typeIn = ConstraintType.Included
+        elif self.w_outInRB.isChecked():
+            typeIn = ConstraintType.Excluded
+        elif self.w_excludeInRB.isChecked():
+            typeIn = ConstraintType.Sanctuarized
         else:
             Debug.end("ConstraintWidget::onSave (Error 1)")
             return;
 
-        if typeIn == ConstraintType.Map: typeOut = ConstraintType.Excluded
-        elif self.w_nearOutRB.isChecked(): typeOut = ConstraintType.Attractive
-        elif self.w_farOutRB.isChecked(): typeOut = ConstraintType.Repulsive
-        elif self.w_inOutRB.isChecked(): typeOut = ConstraintType.Included
-        elif self.w_outOutRB.isChecked(): typeOut = ConstraintType.Excluded
-        elif self.w_excludeOutRB.isChecked(): typeOut = ConstraintType.Sanctuarized
+        if typeIn == ConstraintType.Map:
+            typeOut = ConstraintType.Excluded
+        elif self.w_nearOutRB.isChecked():
+            typeOut = ConstraintType.Attractive
+        elif self.w_farOutRB.isChecked():
+            typeOut = ConstraintType.Repulsive
+        elif self.w_inOutRB.isChecked():
+            typeOut = ConstraintType.Included
+        elif self.w_outOutRB.isChecked():
+            typeOut = ConstraintType.Excluded
+        elif self.w_excludeOutRB.isChecked():
+            typeOut = ConstraintType.Sanctuarized
         else:
             Debug.end("ConstraintWidget::onSave (Error 1)")
             return;
@@ -1252,7 +1303,7 @@ class ConstraintWidget(QWidget):
         Debug.print("distance:" + str(distance))
 
         # get the priority
-        priority = self.w_priority.value()*10
+        priority = self.w_priority.value() * 10
         Debug.print("priority:" + str(priority))
 
         list = self.w_listConstraints.selectedItems()
@@ -1329,10 +1380,13 @@ class ConstraintWidget(QWidget):
             Debug.end("ConstraintWidget::onAddNewConstraint (faillure)")
             return;
 
-        twi = QTreeWidgetItem([constraint.name, SuricatesInstance.ConstraintTypeToString(constraint.typeIn), SuricatesInstance.ConstraintTypeToString(constraint.typeOut), str(constraint.buffer),str(constraint.priority)])
+        twi = QTreeWidgetItem([constraint.name, SuricatesInstance.ConstraintTypeToString(constraint.typeIn),
+                               SuricatesInstance.ConstraintTypeToString(constraint.typeOut), str(constraint.buffer),
+                               str(constraint.priority)])
         self.w_listConstraints.addTopLevelItem(twi)
 
-        self.suricates.iface.messageBar().pushMessage("Success!", "create new constraint", level=Qgis.Success, duration=3)
+        self.suricates.iface.messageBar().pushMessage("Success!", "create new constraint", level=Qgis.Success,
+                                                      duration=3)
         Debug.end("ConstraintWidget::onAddNewConstraint (success)")
         return
 
@@ -1406,6 +1460,7 @@ class ConstraintWidget(QWidget):
         Debug.end("ConstraintWidget::onChangeThreshold")
         return
 
+
 ## @brief widget with controls to select, create and delete projects
 #
 # ![User interface classes imbrication](assets\GuiStructure.png)
@@ -1426,7 +1481,7 @@ class HeaderWidget(QGroupBox):
         # build content of the widget
         ## first line
         ### create the label 'selection'
-        label1 = QLabel("Selection",self)
+        label1 = QLabel("Selection", self)
 
         ### create a combobox to list projects
         self.combobox_project = QComboBox(self)
@@ -1439,7 +1494,7 @@ class HeaderWidget(QGroupBox):
 
         ## second line
         ### create the label 'new'
-        label2 = QLabel("New",self)
+        label2 = QLabel("New", self)
 
         ### create a combobox to list projects
         self.newlineedit_project = QLineEdit(self)
@@ -1455,12 +1510,12 @@ class HeaderWidget(QGroupBox):
         ### 'Selection', combobox, button 'delete'
         ### 'New', text field, button 'new'
         selectl = QGridLayout(self)
-        selectl.addWidget(label1,0,0)
-        selectl.addWidget(self.combobox_project,0,1)
-        selectl.addWidget(self.button_delproject,0,2)
-        selectl.addWidget(label2,1,0)
-        selectl.addWidget(self.newlineedit_project,1,1)
-        selectl.addWidget(self.button_newproject,1,2)
+        selectl.addWidget(label1, 0, 0)
+        selectl.addWidget(self.combobox_project, 0, 1)
+        selectl.addWidget(self.button_delproject, 0, 2)
+        selectl.addWidget(label2, 1, 0)
+        selectl.addWidget(self.newlineedit_project, 1, 1)
+        selectl.addWidget(self.button_newproject, 1, 2)
 
         ## set the layout at the groupbox
         self.setLayout(selectl)
@@ -1530,6 +1585,7 @@ class HeaderWidget(QGroupBox):
         Debug.end("HeaderWidget::onSelectionChange")
         return
 
+
 ## @brief main widget for suricates, it containts a HeaderWidget and a ConstraintWidget
 #
 # ![User interface classes imbrication](assets\GuiStructure.png)
@@ -1547,7 +1603,7 @@ class SuricatesWidget(QWidget):
     # @param parent parent of the widget (QWidget)
     def __init__(self, parent):
         Debug.begin("SuricatesWidget::__init__")
-        QWidget.__init__(self,parent)
+        QWidget.__init__(self, parent)
 
         self.suricates = parent.suricates
 
@@ -1572,7 +1628,8 @@ class SuricatesWidget(QWidget):
         self.logoWidget.setAlignment(Qt.AlignHCenter)
 
         self.logo2Widget = QLabel(self.creditWidget)
-        self.logo2Pixmap = QPixmap(":/plugins/suricates/logo_Universite_de_Lille.svg").scaledToHeight(100, Qt.SmoothTransformation)
+        self.logo2Pixmap = QPixmap(":/plugins/suricates/logo_Universite_de_Lille.svg").scaledToHeight(100,
+                                                                                                      Qt.SmoothTransformation)
         self.logo2Widget.setPixmap(self.logo2Pixmap)
         self.logo2Widget.setAlignment(Qt.AlignHCenter)
 
@@ -1625,6 +1682,7 @@ class SuricatesWidget(QWidget):
         self.constraintWidget.setProject(name)
         Debug.end("SuricatesWidget::setProject")
 
+
 ## @brief simple dockwidget (panel) which contains a SuricatesWidget
 #
 # #
@@ -1640,11 +1698,12 @@ class SuricatesDock(QDockWidget):
     # @param suricates current SuricatesInstance
     def __init__(self, suricates):
         Debug.begin("SuricatesDock::__init__")
-        QDockWidget.__init__(self, "RAIES Model" ,suricates.iface.mainWindow())
+        QDockWidget.__init__(self, "RAIES Model", suricates.iface.mainWindow())
         self.suricates = suricates
         self.w_suricates = SuricatesWidget(self)
         self.setWidget(self.w_suricates)
         Debug.end("SuricatesDock::__init__")
+
 
 ## @brief contains gui commands
 class SuricatesInstance():
@@ -1677,8 +1736,8 @@ class SuricatesInstance():
 
         # dock the new instance
         self.dock = SuricatesDock(self)
-        self.dock.setAttribute(Qt.WA_DeleteOnClose) # set behavior: delete dock widget when closed
-        self.iface.addDockWidget(Qt.RightDockWidgetArea,self.dock)
+        self.dock.setAttribute(Qt.WA_DeleteOnClose)  # set behavior: delete dock widget when closed
+        self.iface.addDockWidget(Qt.RightDockWidgetArea, self.dock)
         QgsProject.instance().cleared.connect(self.closeInstance)
         Debug.end("SuricatesInstance::__init__")
 
@@ -1690,19 +1749,27 @@ class SuricatesInstance():
         # disconnect projects
         projects = self.readProjects()
         for x in projects.values():
-            try: x.nameChanged.disconnect(self.onNameChanged)
-            except: pass
+            try:
+                x.nameChanged.disconnect(self.onNameChanged)
+            except:
+                pass
         # disconnect projects node
-        try: self.projectNode.removedChildren.disconnect(self.onNodeDeleted)
-        except: pass
+        try:
+            self.projectNode.removedChildren.disconnect(self.onNodeDeleted)
+        except:
+            pass
 
-        try: self.projectNode.addedChildren.disconnect(self.onNodeCreated)
-        except: pass
+        try:
+            self.projectNode.addedChildren.disconnect(self.onNodeCreated)
+        except:
+            pass
 
         # close widget
-        try: self.iface.mainWindow().removeDockWidget(self.dock)
-        except: pass
-        #self.dock.close()
+        try:
+            self.iface.mainWindow().removeDockWidget(self.dock)
+        except:
+            pass
+        # self.dock.close()
         Debug.end("SuricatesInstance::closeInstance")
 
     ## @brief return group 'Projects' if exists or create a node 'Project'
@@ -1738,7 +1805,6 @@ class SuricatesInstance():
         Debug.end("SuricatesInstance::initializeProjectNode (2)")
         return self.projectNode
 
-
     ## @brief  return the list of the projects
     def readProjects(self):
         Debug.begin("SuricatesInstance::readProjects")
@@ -1762,13 +1828,15 @@ class SuricatesInstance():
         self.dock.w_suricates.projectWidget.setProjects(projects)
 
         if len(projects) == 0:
-             self.dock.w_suricates.projectWidget.onSelectionChange(None)
+            self.dock.w_suricates.projectWidget.onSelectionChange(None)
 
         # connections for each project
         for x in projects.values():
             # disconnect to avoid multiple connections if it is possible
-            try: x.nameChanged.disconnect(self.onNameChanged)
-            except: pass
+            try:
+                x.nameChanged.disconnect(self.onNameChanged)
+            except:
+                pass
             # if user edits the name of the project then the program calls the method 'onNameChanged'
             x.nameChanged.connect(self.onNameChanged)
         Debug.end("SuricatesInstance::updateProjects")
@@ -1815,7 +1883,7 @@ class SuricatesInstance():
         # get the list of projects
         projects = self.readProjects()
         # search the selected project (projectName) and remove it
-        for x,y in projects.items():
+        for x, y in projects.items():
             if x == projectName:
                 self.projectNode.removeChildNode(y)
 
@@ -1859,7 +1927,7 @@ class SuricatesInstance():
             for k in renamedList:
                 str += "\n -" + k.name()
 
-            self.iface.messageBar().pushMessage("Warning", str, level = Qgis.Warning, duration=5)
+            self.iface.messageBar().pushMessage("Warning", str, level=Qgis.Warning, duration=5)
         Debug.end("SuricatesInstance::verifyProjectName")
 
     ## @brief get the project defined by a name
@@ -1901,19 +1969,20 @@ class SuricatesInstance():
     def getLayer(self, group, name):
         Debug.begin("SuricatesInstance::getLayer: " + group.name() + " " + name)
         for child in group.children():
-            Debug.print("child: " + child.name() )
+            Debug.print("child: " + child.name())
             if isinstance(child, QgsLayerTreeLayer):
                 if child.name() == name:
                     Debug.end("SuricatesInstance::getLayer (layer exists)")
                     return child
-            else: Debug.print("ko: " + str(type(child)) )
+            else:
+                Debug.print("ko: " + str(type(child)))
 
         Debug.end("SuricatesInstance::getLayer (layer doesn't exist)")
         return None
 
     ## @brief get the configuration (tree node) of the project or create a new one
     # @param project node of the project
-    def getConfig(self,project):
+    def getConfig(self, project):
         Debug.begin("SuricatesInstance::getConfig")
         configLayer = self.getLayer(project, "project_config")
         if configLayer == None:
@@ -1934,9 +2003,13 @@ class SuricatesInstance():
 
         for feature in features:
             name = feature["base"]
-            c = ConstraintItem( name,feature["buffer"],feature["priority"],SuricatesInstance.ConstraintTypeFromString(feature["typeIn"]),SuricatesInstance.ConstraintTypeFromString(feature["typeOut"]))
-            if self.getLayer(projectNode, name) == None: c.exists = False
-            else: c.exists = True
+            c = ConstraintItem(name, feature["buffer"], feature["priority"],
+                               SuricatesInstance.ConstraintTypeFromString(feature["typeIn"]),
+                               SuricatesInstance.ConstraintTypeFromString(feature["typeOut"]))
+            if self.getLayer(projectNode, name) == None:
+                c.exists = False
+            else:
+                c.exists = True
             constraints.append(c)
 
         SuricatesInstance.displayConstraints(constraints)
@@ -1961,8 +2034,10 @@ class SuricatesInstance():
         else:
             ok = self.modifyConstraintInConfig(config, newconstraint)
 
-        if ok: Debug.end("SuricatesInstance::saveConstraint (success)")
-        else: Debug.end("SuricatesInstance::saveConstraint (faillure 3)")
+        if ok:
+            Debug.end("SuricatesInstance::saveConstraint (success)")
+        else:
+            Debug.end("SuricatesInstance::saveConstraint (faillure 3)")
         return ok
 
     ## @brief create a new filename which doesn't exist in the qgis project
@@ -1975,7 +2050,7 @@ class SuricatesInstance():
         Debug.begin("SuricatesInstance::createFileName")
         projectPath = QDir(QgsProject.instance().absolutePath())
         file = QFileInfo(projectPath, projectName + "_" + baseName + "." + extention)
-        i=1
+        i = 1
         while file.exists():
             file = QFileInfo(projectPath, projectName + "_" + baseName + "_" + str(i) + "." + extention)
             i = i + 1
@@ -2007,13 +2082,13 @@ class SuricatesInstance():
     # @return type (string)
     @staticmethod
     def ConstraintTypeToString(type):
-       if(type == ConstraintType.Attractive): return "Attractive"
-       if(type == ConstraintType.Repulsive): return "Repulsive"
-       if(type == ConstraintType.Included): return "Included"
-       if(type == ConstraintType.Excluded): return "Excluded"
-       if(type == ConstraintType.Sanctuarized): return "Sanctuarized"
-       if(type == ConstraintType.Map): return "Map"
-       return "None"
+        if (type == ConstraintType.Attractive): return "Attractive"
+        if (type == ConstraintType.Repulsive): return "Repulsive"
+        if (type == ConstraintType.Included): return "Included"
+        if (type == ConstraintType.Excluded): return "Excluded"
+        if (type == ConstraintType.Sanctuarized): return "Sanctuarized"
+        if (type == ConstraintType.Map): return "Map"
+        return "None"
 
     ## @brief convert text to the enum ConstraintType
     # @param typeName (string)
@@ -2021,12 +2096,12 @@ class SuricatesInstance():
     @staticmethod
     def ConstraintTypeFromString(typeName):
         print(typeName)
-        if(typeName == "Attractive"): return ConstraintType.Attractive
-        if(typeName == "Repulsive"): return ConstraintType.Repulsive
-        if(typeName == "Included"): return ConstraintType.Included
-        if(typeName == "Excluded"): return ConstraintType.Excluded
-        if(typeName == "Sanctuarized"): return ConstraintType.Sanctuarized
-        if(typeName == "Map"): return ConstraintType.Map
+        if (typeName == "Attractive"): return ConstraintType.Attractive
+        if (typeName == "Repulsive"): return ConstraintType.Repulsive
+        if (typeName == "Included"): return ConstraintType.Included
+        if (typeName == "Excluded"): return ConstraintType.Excluded
+        if (typeName == "Sanctuarized"): return ConstraintType.Sanctuarized
+        if (typeName == "Map"): return ConstraintType.Map
         return None
 
     ## @brief create a configuration file for a project
@@ -2080,7 +2155,8 @@ class SuricatesInstance():
             self.blockSignals = False
             return l
         else:
-            self.iface.messageBar().pushMessage("Faillure!", "writing new config file:" + str(error), level=Qgis.Critical)
+            self.iface.messageBar().pushMessage("Faillure!", "writing new config file:" + str(error),
+                                                level=Qgis.Critical)
             Debug.end("SuricatesInstance::createConfig (faillure)")
             self.blockSignals = False
             return None
@@ -2094,12 +2170,12 @@ class SuricatesInstance():
         root = self.getProject(projectName)
         # current layer
         layer_shp = self.iface.activeLayer()
-        #↨ verify if current layer is valid
+        # ↨ verify if current layer is valid
         if not type(layer_shp) is QgsVectorLayer:
             Debug.end("SuricatesInstance::copyCurrentLayer (layer not valid)")
             return None;
 
-        print("name:" +  layer_shp.name())
+        print("name:" + layer_shp.name())
 
         # ------------------------
         # create memory layer
@@ -2118,19 +2194,19 @@ class SuricatesInstance():
 
         # if geomtype == QgsWkbTypes.Point:
         #    layer = QgsVectorLayer("Point", "tp2", "memory")
-        #if geomtype == QgsWkbTypes.LineString:
+        # if geomtype == QgsWkbTypes.LineString:
         #    layer = QgsVectorLayer("Line", "tp2", "memory")
-        #if geomtype == QgsWkbTypes.Polygon:
+        # if geomtype == QgsWkbTypes.Polygon:
         #    layer = QgsVectorLayer("Polygon", "tp2", "memory")
-        #if geomtype == QgsWkbTypes.MultiLineString:
+        # if geomtype == QgsWkbTypes.MultiLineString:
         #    layer = QgsVectorLayer("MultiLine", "tp2", "memory")
-        #if geomtype == QgsWkbTypes.MultiPoint:
+        # if geomtype == QgsWkbTypes.MultiPoint:
         #    layer = QgsVectorLayer("MultiPoint", "tp2", "memory")
-        #if geomtype == QgsWkbTypes.MultiPolygon:
+        # if geomtype == QgsWkbTypes.MultiPolygon:
         #    layer = QgsVectorLayer("MultiPolygon", "tp2", "memory")
 
         layer_type = QgsWkbTypes.displayString(layer_shp.wkbType())
-        layer = QgsVectorLayer(layer_type,"tp2","memory")
+        layer = QgsVectorLayer(layer_type, "tp2", "memory")
 
         pr = layer.dataProvider()
 
@@ -2172,7 +2248,7 @@ class SuricatesInstance():
                                                         driverName="ESRI Shapefile")
 
         # manage error
-        if error[0] == QgsVectorFileWriter.NoError:
+        if error == QgsVectorFileWriter.NoError:
             self.iface.messageBar().pushMessage("Success!", "writing new layer", level=Qgis.Success, duration=3)
             # --------------------------
             # open the created file
@@ -2189,8 +2265,10 @@ class SuricatesInstance():
             self.blockSignals = False
             return l
         else:
-            self.iface.messageBar().pushMessage("Faillure!", "writing new layer:" + str(error), level=Qgis.Critical)
-            print(str(error))
+            self.iface.messageBar().pushMessage("Faillure!",
+                                                "writing new layer:" + str(error) + " " + str(error_message),
+                                                level=Qgis.Critical)
+            print(str(error) + " " + str(error_message))
             Debug.end("SuricatesInstance::copyCurrentLayer (faillure)")
             self.blockSignals = False
             return None
@@ -2211,9 +2289,9 @@ class SuricatesInstance():
 
         if layer.dataProvider().capabilities() & QgsVectorDataProvider.ChangeAttributeValues:
             attrs = {1: SuricatesInstance.ConstraintTypeToString(constraint.typeIn),
-                    2: SuricatesInstance.ConstraintTypeToString(constraint.typeOut),
-                    3:constraint.buffer,
-                    4:constraint.priority}
+                     2: SuricatesInstance.ConstraintTypeToString(constraint.typeOut),
+                     3: constraint.buffer,
+                     4: constraint.priority}
             layer.dataProvider().changeAttributeValues({fid: attrs})
 
         layer.updateExtents()
@@ -2229,7 +2307,7 @@ class SuricatesInstance():
     # @return true
     def appendConstraintInConfig(self, configNode, constraint):
         Debug.begin("SuricatesInstance::appendConstraintInConfig")
-        layer_shp =	 QgsProject.instance().mapLayer(configNode.layerId())
+        layer_shp = QgsProject.instance().mapLayer(configNode.layerId())
 
         pr = layer_shp.dataProvider()
 
@@ -2237,8 +2315,8 @@ class SuricatesInstance():
         feat.setAttribute('base', constraint.name)
         print(constraint.typeIn)
         print(constraint.typeOut)
-        feat.setAttribute('typeIn', SuricatesInstance.ConstraintTypeToString(constraint.typeIn) )
-        feat.setAttribute('typeOut', SuricatesInstance.ConstraintTypeToString(constraint.typeOut) )
+        feat.setAttribute('typeIn', SuricatesInstance.ConstraintTypeToString(constraint.typeIn))
+        feat.setAttribute('typeOut', SuricatesInstance.ConstraintTypeToString(constraint.typeOut))
         feat.setAttribute('buffer', constraint.buffer)
         feat.setAttribute('priority', constraint.priority)
         geom = QgsGeometry()
@@ -2286,8 +2364,10 @@ class SuricatesInstance():
     def selectProject(self, projectName):
         Debug.begin("SuricatesInstance::selectProject")
 
-        if projectName != None : Debug.print("selection:" + projectName)
-        else: Debug.print("selection: empty")
+        if projectName != None:
+            Debug.print("selection:" + projectName)
+        else:
+            Debug.print("selection: empty")
 
         self.dock.w_suricates.setProject(projectName)
 
@@ -2318,8 +2398,11 @@ class SuricatesInstance():
     def displayConstraints(constraints):
         Debug.begin("SuricatesInstance::displayConstraints: " + str(len(constraints)))
         for i in constraints:
-            Debug.print(i.name + " " + SuricatesInstance.ConstraintTypeToString(i.typeIn) + " " + SuricatesInstance.ConstraintTypeToString(i.typeOut) + " " + str(i.buffer) + " " + str(i.priority) )
+            Debug.print(i.name + " " + SuricatesInstance.ConstraintTypeToString(
+                i.typeIn) + " " + SuricatesInstance.ConstraintTypeToString(i.typeOut) + " " + str(i.buffer) + " " + str(
+                i.priority))
         Debug.end("SuricatesInstance::displayConstraints")
+
 
 ## @brief main program: close previous instance if exists and start a new one
 def mainProgram(iface):
