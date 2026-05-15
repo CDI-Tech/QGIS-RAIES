@@ -2250,8 +2250,12 @@ class SuricatesInstance():
         # ------------------------
         # save the layer as file ans delete the layer
         # ------------------------
-        error = QgsVectorFileWriter.writeAsVectorFormat(layer, file.absoluteFilePath(), "utf-8",
-                                                        driverName="ESRI Shapefile")
+        save_options = QgsVectorFileWriter.SaveVectorOptions()
+        save_options.driverName = "ESRI Shapefile"
+        save_options.fileEncoding = "utf-8"
+        transform_context = QgsProject.instance().transformContext()
+        error, error_message = QgsVectorFileWriter.writeAsVectorFormatV3(
+            layer, file.absoluteFilePath(), transform_context, save_options)
 
         # manage error
         if error == QgsVectorFileWriter.NoError:
