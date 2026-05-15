@@ -602,18 +602,19 @@ class SuricatesAlgo(QgsTask):
     # @param coef value of the raster layer
     # @return the name of the output raster file
     def calculateTheConstraintWithConstant(self, layerName, mapName, outputName, coef):
-        if(outputName == None) : outputName = self.getNewFileName('.tif')
-        result = processing.run("gdal:rastercalculator", { 'BAND_A' : 1, 'BAND_B' : 1, 'BAND_C' : -1, 'BAND_D' : -1, 'BAND_E' : -1, 'BAND_F' : -1,
-                'EXTRA' : '',
-                'FORMULA' : str(coef),
-                'INPUT_A' : layerName,
-                'INPUT_B' : mapName,
-                'INPUT_C' : None, 'INPUT_D' : None, 'INPUT_E' : None, 'INPUT_F' : None,
-                'NO_DATA' : -9999,
-                'OPTIONS' : '',
-                'OUTPUT' : outputName,
-                'RTYPE' : 5 })
-        print('calculateTheConstraintWithConstant ' + result['OUTPUT']);
+        if (outputName == None): outputName = self.getNewFileName('.tif')
+        result = processing.run("gdal:rastercalculator",
+                                {'BAND_A': 1, 'BAND_B': 1, 'BAND_C': -1, 'BAND_D': -1, 'BAND_E': -1, 'BAND_F': -1,
+                                 'EXTRA': '',
+                                 'FORMULA': str(coef),
+                                 'INPUT_A': layerName,
+                                 'INPUT_B': mapName,
+                                 'INPUT_C': None, 'INPUT_D': None, 'INPUT_E': None, 'INPUT_F': None,
+                                 'NO_DATA': -9999,
+                                 'OPTIONS': '',
+                                 'OUTPUT': outputName,
+                                 'RTYPE': 5})
+        print('calculateTheConstraintWithConstant ' + result['OUTPUT'])
         return result['OUTPUT']
 
     ## @brief cumulate values of raster layers
@@ -626,7 +627,7 @@ class SuricatesAlgo(QgsTask):
 
         if (count == 0):
             Debug.end("SuricateAlgo::cummulateLayers (1)")
-            return None;
+            return None
 
         baseLayer = listLayerName[0]
         result = None
@@ -835,7 +836,7 @@ class SuricatesAlgo(QgsTask):
                                                                   level=Qgis.Critical)
 
         if result:
-            root = self.suricatesInstance.getProject(self.projectName);
+            root = self.suricatesInstance.getProject(self.projectName)
 
             for name, filename in self.outputs.items():
                 dir = QDir(QgsProject.instance().absolutePath())
@@ -1064,7 +1065,7 @@ class ConstraintWidget(QWidget):
         if self.currentProject == None:
             self.setEnabled(False)
             Debug.end("ConstraintWidget::updateProject (Empty project)")
-            return;
+            return
         else:
             self.setEnabled(True)
 
@@ -1076,7 +1077,7 @@ class ConstraintWidget(QWidget):
         configLayer = self.suricates.getConfig(project)
         if configLayer == None:
             Debug.end("ConstraintWidget::updateProject (Error 2)")
-            return;
+            return
 
         constraintsList = self.suricates.getConstraintsFromConfig(project, configLayer)
 
@@ -1109,7 +1110,7 @@ class ConstraintWidget(QWidget):
         configLayer = self.suricates.getConfig(project)
         if configLayer == None:
             Debug.end("ConstraintWidget::updateOption (Error 2)")
-            return;
+            return
 
         constraintsList = self.suricates.getConstraintsFromConfig(project, configLayer)
 
@@ -1121,7 +1122,7 @@ class ConstraintWidget(QWidget):
         if current == None:
             setOptionEnabled(False)
             Debug.end("ConstraintWidget::updateOption (Error 3)")
-            return;
+            return
 
         self.w_save.setEnabled(True)
 
@@ -1214,7 +1215,7 @@ class ConstraintWidget(QWidget):
         configLayer = self.suricates.getConfig(project)
         if configLayer == None:
             Debug.end("ConstraintWidget::getConstraintFromName (Error 2)")
-            return;
+            return
 
         constraintsList = self.suricates.getConstraintsFromConfig(project, configLayer)
 
@@ -1226,7 +1227,7 @@ class ConstraintWidget(QWidget):
         if current == None:
             setOptionEnabled(False)
             Debug.end("ConstraintWidget::getConstraintFromName (Error 3)")
-            return;
+            return
 
         Debug.end("ConstraintWidget::getConstraintFromName")
         return current
@@ -1244,10 +1245,10 @@ class ConstraintWidget(QWidget):
         configLayer = self.suricates.getConfig(project)
         if configLayer == None:
             Debug.end("ConstraintWidget::onCompute (Error 2)")
-            return;
+            return
 
         constraintsList = self.suricates.getConstraintsFromConfig(project, configLayer)
-        intputList = list();
+        intputList = list()
 
         for constraint in constraintsList:
             layer = self.suricates.getLayer(project, constraint.name)
@@ -1284,7 +1285,7 @@ class ConstraintWidget(QWidget):
             typeIn = ConstraintType.Sanctuarized
         else:
             Debug.end("ConstraintWidget::onSave (Error 1)")
-            return;
+            return
 
         if typeIn == ConstraintType.Map:
             typeOut = ConstraintType.Excluded
@@ -1300,7 +1301,7 @@ class ConstraintWidget(QWidget):
             typeOut = ConstraintType.Sanctuarized
         else:
             Debug.end("ConstraintWidget::onSave (Error 1)")
-            return;
+            return
 
         Debug.print("type:" + SuricatesInstance.ConstraintTypeToString(type))
 
@@ -1334,7 +1335,7 @@ class ConstraintWidget(QWidget):
         if not self.suricates.saveConstraint(self.currentProject, constraint, False):
             self.suricates.iface.messageBar().pushMessage("Faillure!", "save constraint:", level=Qgis.Critical)
             Debug.end("ConstraintWidget::onSave (Error 4)")
-            return;
+            return
 
         treeitem.setText(1, SuricatesInstance.ConstraintTypeToString(constraint.typeIn))
         treeitem.setText(2, SuricatesInstance.ConstraintTypeToString(constraint.typeOut))
@@ -1362,7 +1363,7 @@ class ConstraintWidget(QWidget):
         configLayer = self.suricates.getConfig(project)
         if configLayer == None:
             Debug.end("ConstraintWidget::onAddNewConstraint (Error 2)")
-            return;
+            return
 
         constraintsList = self.suricates.getConstraintsFromConfig(project, configLayer)
 
@@ -1384,7 +1385,7 @@ class ConstraintWidget(QWidget):
         if not self.suricates.saveConstraint(self.currentProject, constraint, True):
             self.suricates.iface.messageBar().pushMessage("Faillure!", "create new constraint:", level=Qgis.Critical)
             Debug.end("ConstraintWidget::onAddNewConstraint (faillure)")
-            return;
+            return
 
         twi = QTreeWidgetItem([constraint.name, SuricatesInstance.ConstraintTypeToString(constraint.typeIn),
                                SuricatesInstance.ConstraintTypeToString(constraint.typeOut), str(constraint.buffer),
@@ -1442,7 +1443,7 @@ class ConstraintWidget(QWidget):
         configLayer = self.suricates.getConfig(project)
         if configLayer == None:
             Debug.end("ConstraintWidget::onChangeThreshold (Error 2)")
-            return;
+            return
 
         constraintsList = self.suricates.getConstraintsFromConfig(project, configLayer)
 
@@ -1453,7 +1454,7 @@ class ConstraintWidget(QWidget):
 
         if current == None:
             Debug.end("ConstraintWidget::onChangeThreshold (Error 3)")
-            return;
+            return
 
         current.priority = value
 
@@ -1461,7 +1462,7 @@ class ConstraintWidget(QWidget):
         if not ok:
             self.suricates.iface.messageBar().pushMessage("Faillure!", "save constraint:", level=Qgis.Critical)
             Debug.end("ConstraintWidget::onChangeThreshold (Error 4)")
-            return;
+            return
 
         Debug.end("ConstraintWidget::onChangeThreshold")
         return
@@ -1510,7 +1511,7 @@ class HeaderWidget(QGroupBox):
         self.button_newproject.setIcon(QIcon(":/images/themes/default/mActionAdd.svg"))
         self.button_newproject.setToolTip("New project")
         self.button_newproject.setMaximumWidth(self.button_newproject.sizeHint().height())
-        self.button_newproject.setEnabled(False);
+        self.button_newproject.setEnabled(False)
 
         ### create global layout (grid) to order widgets:
         ### 'Selection', combobox, button 'delete'
@@ -1542,9 +1543,9 @@ class HeaderWidget(QGroupBox):
     # @param projects map of the projects
     def setProjects(self, projects):
         Debug.begin("HeaderWidget::setProjects")
-        self.combobox_project.clear();
+        self.combobox_project.clear()
         for x in projects.keys():
-            self.combobox_project.addItem(x);
+            self.combobox_project.addItem(x)
         Debug.end("HeaderWidget::setProjects")
         return
 
@@ -1815,7 +1816,7 @@ class SuricatesInstance():
     def readProjects(self):
         Debug.begin("SuricatesInstance::readProjects")
         # dictionary to return
-        projects = dict();
+        projects = dict()
         # verify that project have different names
         self.verifyProjectName()
         # fill the dictionary with projects (children of the group 'Project')
@@ -1823,7 +1824,7 @@ class SuricatesInstance():
             if isinstance(child, QgsLayerTreeGroup):
                 projects[child.name()] = child
         Debug.end("SuricatesInstance::readProjects")
-        return projects;
+        return projects
 
     ## @brief update project signals
     def updateProjects(self):
@@ -1850,7 +1851,7 @@ class SuricatesInstance():
     ## @brief called when a project node is renamed (layer panel)
     # @see updateProjects()
     def onNameChanged(self):
-        if self.blockSignals: return;
+        if self.blockSignals: return
         Debug.begin("SuricatesInstance::onNameChanged")
         self.updateProjects()
         Debug.end("SuricatesInstance::onNameChanged")
@@ -1858,7 +1859,7 @@ class SuricatesInstance():
     ## @brief called when a project node is created (layer panel)
     # @see updateProjects()
     def onNodeCreated(self):
-        if self.blockSignals: return;
+        if self.blockSignals: return
         Debug.begin("SuricatesInstance::onNodeCreated")
         self.updateProjects()
         Debug.end("SuricatesInstance::onNodeCreated")
@@ -1866,7 +1867,7 @@ class SuricatesInstance():
     ## @brief called when a project node is deleted (layer panel)
     # @see updateProjects()
     def onNodeDeleted(self):
-        if self.blockSignals: return;
+        if self.blockSignals: return
         Debug.begin("SuricatesInstance::onNodeDeleted")
         self.updateProjects()
         Debug.end("SuricatesInstance::onNodeDeleted")
@@ -1967,7 +1968,7 @@ class SuricatesInstance():
         self.displayLayers(layers)
 
         Debug.end("SuricatesInstance::getLayers")
-        return layers;
+        return layers
 
     ## @brief get a specific layer (tree node) by name of a group
     # @param group group
@@ -2074,7 +2075,7 @@ class SuricatesInstance():
         project = self.getProject(projectName)
 
         name = layerBaseName
-        i = 0;
+        i = 0
 
         while self.getLayer(project, name) != None:
             name = layerBaseName + "_" + str(i)
@@ -2179,7 +2180,7 @@ class SuricatesInstance():
         # ↨ verify if current layer is valid
         if not type(layer_shp) is QgsVectorLayer:
             Debug.end("SuricatesInstance::copyCurrentLayer (layer not valid)")
-            return None;
+            return None
 
         print("name:" + layer_shp.name())
 
@@ -2196,7 +2197,7 @@ class SuricatesInstance():
 
         if geomtype == QgsWkbTypes.Unknown or geomtype == QgsWkbTypes.NoGeometry:
             Debug.end("SuricatesInstance::copyCurrentLayer (layer not valid)")
-            return None;
+            return None
 
         # if geomtype == QgsWkbTypes.Point:
         #    layer = QgsVectorLayer("Point", "tp2", "memory")
