@@ -282,7 +282,7 @@ class ConstraintWidget(QWidget):
                 current = constraint
 
         if current == None:
-            setOptionEnabled(False)
+            self.setOptionEnabled(False)
             Debug.end("ConstraintWidget::updateOption (Error 3)")
             return
 
@@ -387,7 +387,7 @@ class ConstraintWidget(QWidget):
                 current = constraint
 
         if current == None:
-            setOptionEnabled(False)
+            self.setOptionEnabled(False)
             Debug.end("ConstraintWidget::getConstraintFromName (Error 3)")
             return
 
@@ -432,6 +432,7 @@ class ConstraintWidget(QWidget):
 
     ## @brief save parameters of the current constraint when user click button
     def onSave(self):
+        from .SuricatesApp import SuricatesInstance
         # get the type
         Debug.begin("ConstraintWidget::onSave")
         if not self.w_priority.isEnabled():
@@ -517,6 +518,7 @@ class ConstraintWidget(QWidget):
     # @endmsc
     #
     def onAddNewConstraint(self):
+        from .SuricatesApp import SuricatesInstance
         Debug.begin("ConstraintWidget::onAddNewConstraint")
         project = self.suricates.getProject(self.currentProject)
         if project == None:

@@ -554,6 +554,7 @@ class SuricatesInstance():
 
         layer_type = QgsWkbTypes.displayString(layer_shp.wkbType())
         layer = QgsVectorLayer(layer_type,"tp2","memory")
+        layer.setCrs(layer_shp.crs())
 
         pr = layer.dataProvider()
 
@@ -594,6 +595,7 @@ class SuricatesInstance():
         save_options = QgsVectorFileWriter.SaveVectorOptions()
         save_options.driverName = "ESRI Shapefile"
         save_options.fileEncoding = "utf-8"
+
         transform_context = QgsProject.instance().transformContext()
         error, error_message, new_filename, new_layer_name = QgsVectorFileWriter.writeAsVectorFormatV3(
             layer, file.absoluteFilePath(), transform_context, save_options)
@@ -605,9 +607,7 @@ class SuricatesInstance():
             # open the created file
             # --------------------------
             uri = file.absoluteFilePath()
-            crs = layer_shp.crs()
             layer_shp = QgsVectorLayer(uri, layername, 'ogr')
-            layer_shp.setCrs(crs)
             print("items: " + str(layer_shp.featureCount()))
 
             QgsProject.instance().addMapLayer(layer_shp, False)
