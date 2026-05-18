@@ -470,7 +470,7 @@ class SuricatesAlgo(QgsTask):
         # VALUES='0' : compute distance to pixels with value 0 (the burned constraint cells).
         result = processing.run("gdal:proximity", { 'BAND' : 1,
               'DATA_TYPE' : 5,
-              'EXTRA' : '-srcnodata -9999',
+              'EXTRA' : '',
               'INPUT' : rasterName,
               'MAX_DISTANCE' : 0,
               'NODATA' : -9999,
@@ -716,9 +716,15 @@ class SuricatesAlgo(QgsTask):
     # @param coef: coef to apply at the output raster
     # @return the name of the output raster file
     def calculateTheConstraintOfProximity(self, layerName, invertedLayerName, mapName, outputName, invert, coef):
+        Debug.warning("proximity: layerName=" + str(layerName))
+        Debug.warning("proximity: invertedLayerName=" + str(invertedLayerName))
+        Debug.warning("proximity: mapName=" + str(mapName))
         RasterProximity = self.proximity(layerName, None)
-        RasterProximityClip1 = self.clip(RasterProximity,mapName,None)
-        RasterProximityClip2 = self.clip(RasterProximityClip1,invertedLayerName,None)
+        Debug.warning("proximity result=" + str(RasterProximity))
+        RasterProximityClip1 = self.clip(RasterProximity, mapName, None)
+        Debug.warning("clip1 result=" + str(RasterProximityClip1))
+        RasterProximityClip2 = self.clip(RasterProximityClip1, invertedLayerName, None)
+        Debug.warning("clip2 result=" + str(RasterProximityClip2))
         return self.normalizeRaster(RasterProximityClip2, None, invert, coef)
 
 
@@ -878,12 +884,27 @@ class SuricatesAlgo(QgsTask):
     #   inside  -> rasterLayer   (0 where constraint is)
     #   outside -> rasterLayer_1 (0 where constraint is NOT)
     def computeRaster(self, zone, constraintType, priority, rasterMap, rasterLayer, rasterLayer_1):
+        # For proximity types, the clip mask depends on the zone:
+        #   inside  -> clip by rasterLayer   (keep gradient inside  the constraint)
+        #   outside -> clip by rasterLayer_1 (keep gradient outside the constraint)
+
+
         if constraintType == ConstraintType.Repulsive:
+            # mask = rasterLayer if zone == 'inside' else rasterLayer_1
+            if zone == "inside":
+                tmp = rasterLayer
+                rasterLayer = rasterLayer_1
+                rasterLayer_1 = tmp
             return self.calculateTheConstraintOfProximity(rasterLayer, rasterLayer_1, rasterMap, None, True, priority)
         if constraintType == ConstraintType.Attractive:
+            if zone == "inside":
+                tmp = rasterLayer
+                rasterLayer = rasterLayer_1
+                rasterLayer_1 = tmp
+            # mask = rasterLayer if zone == 'inside' else rasterLayer_1
             return self.calculateTheConstraintOfProximity(rasterLayer, rasterLayer_1, rasterMap, None, False, priority)
 
-        # Select the right mask for this zone
+        # For constant types, select the right mask for this zone
         mask = rasterLayer if zone == 'inside' else rasterLayer_1
 
         if constraintType == ConstraintType.Sanctuarized:
