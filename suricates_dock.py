@@ -13,9 +13,11 @@ from qgis.core import *
 from qgis.gui import *
 from qgis.PyQt.QtGui import *
 from qgis.PyQt.QtCore import *
-from qgis.PyQt.QtWidgets import *
+from qgis.PyQt.QtWidgets import QDockWidget
 
 from .debug import Debug
+
+from .suricates_widget import SuricatesWidget
 
 class SuricatesDock(QDockWidget):
     ## @var suricates
@@ -27,7 +29,6 @@ class SuricatesDock(QDockWidget):
     ## @brief constructor
     # @param suricates current SuricatesInstance
     def __init__(self, suricates):
-        from .SuricatesApp import SuricatesWidget
         Debug.begin("SuricatesDock::__init__")
         QDockWidget.__init__(self, "RAIES Model" ,suricates.iface.mainWindow())
         self.suricates = suricates
