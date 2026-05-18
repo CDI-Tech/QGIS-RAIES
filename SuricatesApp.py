@@ -35,7 +35,6 @@ import copy
 
 import os
 
-
 ## @brief toolbox for debug functions
 #
 # this class aims to debug in the context of the python editor of QGis: there are not evolved tools to facilitate this task.
@@ -75,34 +74,49 @@ class Debug():
     enabled = False
 
     ## @brief indentation variable
-    __indentDebug = 0;
+    __indentDebug = 0
+
+    ## @brief QGIS log tag
+    __tag = "RAIES-Suricates"
+
+    ## @brief write to both Python console and QGIS log panel
+    @staticmethod
+    def __log(text, level=Qgis.Info):
+        QgsMessageLog.logMessage(text, Debug.__tag, level=level)
+        print(text)
 
     ## @brief display text (start of a function) if debug mode
     @staticmethod
     def begin(text):
         if Debug.enabled:
-            for i in range(0, Debug.__indentDebug):
-                text = " " + text;
-            print(text + " begin")
+            indent = " " * Debug.__indentDebug
+            Debug.__log(indent + text + " begin")
             Debug.__indentDebug = Debug.__indentDebug + 1
 
     ## @brief display text if debug mode
     @staticmethod
     def print(text):
         if Debug.enabled:
-            for i in range(0, Debug.__indentDebug):
-                text = " " + text;
-            print(text)
+            indent = " " * Debug.__indentDebug
+            Debug.__log(indent + text)
 
     ## @brief display text (end of a function) if debug mode
     @staticmethod
     def end(text):
         if Debug.enabled:
-            Debug.__indentDebug = Debug.__indentDebug - 1
-            for i in range(0, Debug.__indentDebug):
-                text = " " + text;
-            print(text + " end")
+            Debug.__indentDebug = max(0, Debug.__indentDebug - 1)
+            indent = " " * Debug.__indentDebug
+            Debug.__log(indent + text + " end")
 
+    ## @brief always log a warning (visible in QGIS log panel even if debug is disabled)
+    @staticmethod
+    def warning(text):
+        Debug.__log("[WARNING] " + text, level=Qgis.Warning)
+
+    ## @brief always log an error (visible in QGIS log panel even if debug is disabled)
+    @staticmethod
+    def error(text):
+        Debug.__log("[ERROR] " + text, level=Qgis.Critical)
 
 ## @brief corresponds to the differents constraint types
 #
