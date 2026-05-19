@@ -2,197 +2,185 @@
 
 ## 1) Application
 
-This application is a plugins for the software [QGIS](https://qgis.org/): it is compatible with the version *3.10.9* (Long Term Release "A Coruna")
+This application is a plugin for the software [QGIS](https://qgis.org/). It is compatible with version *3.40.9* (Long Term Release "Bratislava").
 
-This application is based on the theorical model and treatment design of [*Eric Masson*](https://pro.univ-lille.fr/eric-masson/) Professor (Associate) of the *Université de Lille*.
+This application is based on the theoretical model and treatment design of [*Eric Masson*](https://pro.univ-lille.fr/eric-masson/), Associate Professor at the *Université de Lille*.
 
-This application was ordered by the *Université de Lille* (France), *UFR de Géographie et Aménagement* and funded by ERDF Interreg NWE (SURICATES Project 2017-2023).
+This application was commissioned by the *Université de Lille* (France), *UFR de Géographie et Aménagement*, and funded by ERDF Interreg NWE (SURICATES Project 2017–2023).
 
-This application was initially developed by [Vincent Majorczyk](https://www.linkedin.com/in/vincentmajorczyk/?lipi=urn%3Ali%3Apage%3Ad_flagship3_feed%3BcBKV%2FjGxRH%2BBwA8k716Xjw%3D%3D) ([*CDI-Technologies*](https://www.linkedin.com/company/cdi-technologies)  2020).
+This application was initially developed by [Vincent Majorczyk](https://www.linkedin.com/in/vincentmajorczyk/) ([*CDI-Technologies*](https://www.linkedin.com/company/cdi-technologies), 2020).
 
-This application is released under the open source license [GNU-General Public License 3](gpl-4.0.md).
+This application is released under the open source licence [GNU General Public License v3](gpl-3.0.md).
 
-repository: https://github.com/CDI-Tech/QGIS-RAIES
-
-bug tracking: https://github.com/CDI-Tech/QGIS-RAIES/issues
+- Repository: https://github.com/CDI-Tech/QGIS-RAIES
+- Bug tracking: https://github.com/CDI-Tech/QGIS-RAIES/issues
 
 ## 2) Publications
 
 > **Jan 2021**: [Un outil participatif (RAIES) pour la localisation de sites de valorisation de dragage : application à l'estuaire de la Rance.](https://www.researchgate.net/publication/355393946_Un_outil_participatif_RAIES_pour_la_localisation_de_sites_de_valorisation_de_dragage_application_a_l'estuaire_de_la_Rance)
 >
-> Eric Masson, Edwige Motte, Guillaume G Chevalier, Jean-Batiste Litot, Christelle Audouit, Philippe Deboudt, Blanpain Olivier
+> Eric Masson, Edwige Motte, Guillaume G Chevalier, Jean-Baptiste Litot, Christelle Audouit, Philippe Deboudt, Blanpain Olivier
+
+> **Nov 2020**: [RAIE : un outil de cartographie de l'acceptabilité territoriale au réemploi de sédiments d'infrastructure portuaire.](https://www.researchgate.net/publication/346811227_RAIE_un_outil_de_cartographie_de_l'acceptabilite_territoriale_au_reemploi_de_sediments_d'infrastructure_portuaire)
 >
-> **Presentation:** *Cette communication à destination des élus présente le potentiel d'une application SIG développée sous QGIS dans le cadre du projet Suricates (2017-2023) financé par Interreg ENO. Les premiers résultats cartographiques suites aux entretiens réalisés auprès d'acteurs de la Rance illustrent le potentiel de cette application participative.*
-
-
-
-> **Nov 2020:** [RAIE : un outil de cartographie de l'acceptabilité territoriale au réemploi de sédiments d'infrastructure portuaire.](https://www.researchgate.net/publication/346811227_RAIE_un_outil_de_cartographie_de_l'acceptabilite_territoriale_au_reemploi_de_sediments_d'infrastructure_portuaire) 
+> Eric Masson, Edwige Motte, Guillaume G Chevalier, Jean-Baptiste Litot, Christelle Audouit, Philippe Deboudt, Blanpain Olivier
 >
-> Eric Masson, Edwige Motte, Guillaume G Chevalier, Jean-Batiste Litot, Christelle Audouit, Philippe Deboudt, Blanpain Olivier
->
-> **Conference Paper meriGéo**: *La gestion des zones côtières implique un échange entre des acteurs territoriaux qui doivent converger vers une prise de décision lorsqu’il s’agit de construire, aménager, protéger une infrastructure ou un espace « naturel »*
+> **Conference Paper meriGéo**
 
-
-
-> **Oct 2019:** [RAIE : Modélisation des représentations spatiales pour la production de cartes mentales sur base d'ontologie déclarative.](https://www.researchgate.net/publication/337316228_RAIE_Modelisation_des_representations_spatiales_pour_la_production_de_cartes_mentales_sur_base_d'ontologie_declarative)
+> **Oct 2019**: [RAIE : Modélisation des représentations spatiales pour la production de cartes mentales sur base d'ontologie déclarative.](https://www.researchgate.net/publication/337316228_RAIE_Modelisation_des_representations_spatiales_pour_la_production_de_cartes_mentales_sur_base_d'ontologie_declarative)
 >
 > Eric Masson, Jean-Baptiste Litot, Blanpain Olivier
 >
 > **Poster**
 
-
-
-> **Fev 2019:** [RAIE : Un modèle d’analyse numérique du géopotentiel des territoires basé sur les représentations des contraintes spatiales.](https://www.researchgate.net/publication/330988188_RAIE_Un_modele_d'analyse_numerique_du_geopotentiel_des_territoires_base_sur_les_representations_des_contraintes_spatiales)
+> **Feb 2019**: [RAIE : Un modèle d'analyse numérique du géopotentiel des territoires basé sur les représentations des contraintes spatiales.](https://www.researchgate.net/publication/330988188_RAIE_Un_modele_d'analyse_numerique_du_geopotentiel_des_territoires_base_sur_les_representations_des_contraintes_spatiales)
 >
 > Eric Masson, Sarah Cabarry, Jean-Baptiste Litot, Blanpain Olivier
 >
-> **Presentation 14ème rencontres de Théo Quant:** GIS application developed within the SURICATES project.
+> **Presentation, 14th Théo Quant conference**
 
 ## 3) Deliverables
 
-- [Deliverable 1-1 Sediment management GIS add-on development and testing](https://github.com/CDI-Tech/QGIS-RAIES/blob/main/deliverables/WP%20T1%20Deliverable%201-1%20Sediment%20management%20GIS%20add-on%20development%20and%20testing_Final.pdf)
-- [Deliverable 1-2 Sediment management GIS implementation](https://github.com/CDI-Tech/QGIS-RAIES/blob/main/deliverables/WP%20T1%20Deliverable%201-2%20Sediment%20management%20GIS%20implementation_Final.pdf)
-- [Deliverable 1-3 Identification of 3 New Sediment Use Opportunities](https://github.com/CDI-Tech/QGIS-RAIES/blob/main/deliverables/WP%20T1%20Deliverable%201-3%20Identification%20of%203%20New%20Sediment%20Use%20Opportunities_Final.pdf)
+- [Deliverable 1-1: Sediment management GIS add-on development and testing](https://github.com/CDI-Tech/QGIS-RAIES/blob/main/deliverables/WP%20T1%20Deliverable%201-1%20Sediment%20management%20GIS%20add-on%20development%20and%20testing_Final.pdf)
+- [Deliverable 1-2: Sediment management GIS implementation](https://github.com/CDI-Tech/QGIS-RAIES/blob/main/deliverables/WP%20T1%20Deliverable%201-2%20Sediment%20management%20GIS%20implementation_Final.pdf)
+- [Deliverable 1-3: Identification of 3 New Sediment Use Opportunities](https://github.com/CDI-Tech/QGIS-RAIES/blob/main/deliverables/WP%20T1%20Deliverable%201-3%20Identification%20of%203%20New%20Sediment%20Use%20Opportunities_Final.pdf)
 
 ## 4) User manual
 
-### 4.I) install the plugin
+### 4.1) Install the plugin
 
-The first step consists to compress the folder which contains script in a *ZIP* file. Next, go to *Menu/Plugins/Manage and install plugins/install from ZIP* and load the *ZIP* file. A new submenu appears in the *Menu/Plugin* named 'RAIES' which contains an action named 'RAIES'. This last load a new panel at the right of the main windows of *QGis*.
+Compress the plugin folder into a *ZIP* file. Then go to *Menu / Plugins / Manage and install plugins / Install from ZIP* and load the ZIP file. A new submenu named **RAIES** appears under *Menu / Plugins*, containing an action named **RAIES** that opens a panel on the right side of the QGIS main window.
 
-### 4.2) prepare data
+### 4.2) Prepare data
 
-The application must be executed in the context of a *QGIS* project which contains prepared database: data must have a common CRS (Coordinate Reference System) and the application accepts only vector layers as input. Inputs will be used to produce a raster layer of cumulated constraints.
+The application must be used within a *QGIS* project containing prepared data. All input layers must share a common projected CRS (Coordinate Reference System, in metres — not degrees). Only vector layers are accepted as input. These will be used to produce a cumulated constraint raster.
 
-### 4.3) manage 'RAIES' projects
+> **Important:** all layers must be in the same projected CRS as the map layer. The application checks CRS consistency at computation time and will abort with a diagnostic report if mismatches are found.
 
-When the application is started, a group 'Projects' is created at the root in the panel of layers. This will contains all projects using database available in the current *QGIS* project.
+### 4.3) Manage RAIES projects
 
-A *RAIES* project is a list of constraint choices which are used to create a raster. The raster indicates best locations depending the list of constraints.
+When the application starts, a group **Projects** is created at the root of the layer panel. All RAIES projects within the current QGIS project appear as subgroups of this group.
 
-The panel *RAIES* is divided in tree parts: the management of projects and the management of the constraint list of the current project and parameter of the current constraint.
+A *RAIES* project is a named collection of constraint choices used to generate a raster indicating the best locations according to those constraints.
 
-The control to manage projects is composed of four items:
+The RAIES panel is divided into three parts: project management, constraint list management, and individual constraint configuration.
 
-- a combobox with the available projects: this allows to select the project to configure;
+The project management area contains:
+
+- a combobox listing available projects;
 - a button to delete the selected project;
-- a field to type the name of a new project;
-- a button to create a new project: this button is disactivated if the name already exists.
+- a text field to enter a new project name;
+- a button to create a new project (disabled if the name already exists).
 
 ![User interface: management of projects](assets/UserManuel_Project.png)
 
-Each project is visualized as a subgroup of the group 'Projects'   on the panel of layers. The subgroup contains a layer named *project_config* which contains information about constraints. The content of the layer *project_config* is displayed on the list in the *RAIES* panel.
+Each project appears as a subgroup of the **Projects** group in the layer panel. The subgroup contains a layer named *project_config* which stores constraint information. This is reflected in the constraint list displayed in the RAIES panel.
 
 ![User interface: panel of layers](assets/UserManual_PanelOfLayers.png)
 
-### 4.4) configure a project
+### 4.4) Configure a project
 
-The second part of the panel *RAIES* allows to add, remove and select constraints.
+The second part of the RAIES panel allows adding, removing, and selecting constraints.
 
-The first layer to add is the shape of the region: the global area where computation will be executed. This is considered in the list as the constraint type *Map* and allows the configuration of a buffer around the zone.
+The first layer to add is the **map layer**: the polygon defining the overall study area within which computation will be performed. It appears in the list with constraint type *Map* and allows configuration of a buffer around the zone.
 
-A layer is added by selection in the panel of layers, then by clicking on the button 'Add'. If no features of the layer is selected, then the layer is integrally copied on the group of the project. If features of the layer are selected (zone selection,  attribute filter selection, ...), only selected features are copied.
+A layer is added by selecting it in the layer panel, then clicking **Add**. If no features are selected, the entire layer is copied into the project group. If features are selected (by spatial selection, attribute filter, etc.), only those features are copied.
 
 ![User interface: list of constrained layers](assets/UserManual_ListOfConstraints.png)
 
-The next added layers are configured by constraint choices:
+Subsequent layers are configured with the following parameters:
 
-- around the geometry of items of the input vector layer, a buffer area may be configured;
-- inside the geometry of the items (and associated buffer areas), a constraint type is configured;
-- outside the geometry of the items, another constraint type is configured;
-- the output raster results from choice applied to a layer, and it has a weight compared to other output raster.
+- a **buffer distance** around the geometry of the input layer's features;
+- an **inside constraint type**: applied within the geometry (and its buffer);
+- an **outside constraint type**: applied outside the geometry;
+- a **priority weight** applied to the output raster relative to other constraints.
 
-The button *Save* allow to save the parameters of the current constraint.
+Click **Save** to save the current constraint's parameters.
 
 ![User interface: constraints configuration](assets/UserManual_ConstraintConfiguration.png)
 
 There are five constraint types:
 
-- *Repulsive* and *Attractive* constraints: the bounds of the geometries are considered as near and the maximal distance from these as far:
-  - If the constraint is *Attractive* the value near cells are 0 (black) and the far cells are 1 (white)
-  - If the constraint is *Repulsive* the value near cells are 1 and the far cells are 0
-- *Included* and *Excluded*: the value of the considered area is respectively 0 and 1
-- *Sanctuarized*: the cells of the considered area are exclude of the final raster (No-Data value) 
+- **Attractive** and **Repulsive**: a distance gradient is computed from the geometry boundary. For *Attractive*, cells near the boundary have value 0 (black) and far cells have value 1 (white). For *Repulsive*, near cells are 1 and far cells are 0.
+- **Included**: all cells in the considered zone receive value 0.
+- **Excluded**: all cells in the considered zone receive value 1 (the priority weight).
+- **Sanctuarized**: all cells in the considered zone are excluded from the final raster (No-Data).
 
-![the constraints](assets/constraints.svg)
+![The constraints](assets/constraints.svg)
 
-### 4.5) compute raster from the project
+### 4.5) Compute the raster
 
-Before to compute, save the *QGIS* project is recommended to avoid losses if the application crash.
+Saving the QGIS project before computing is strongly recommended to avoid data loss if the application crashes.
 
-To finalize the project: select a threshold value and click on the button *Compute*. The progress of the process appear on the status bar of *QGIS*.
+To run the computation: set a threshold value and click **Compute**. Progress is shown in the QGIS status bar.
 
-For each layer (and its constraints), the *RAIES* application creates a raster weighted by the priority value. Next, all of these weighted rasters are cumulated and normalized from 0 to 1. Finally, the cumulated raster is binarized depending the threshold value: cells whom value exceed the threshold are set to 1 and the other cells are set to 0.
+For each constraint layer, the application produces a raster weighted by the priority value. All weighted rasters are then cumulated and normalised to the range [0, 1]. Finally, the cumulated raster is thresholded: cells with a value **below** the threshold are retained (favourable locations), and cells above the threshold are set to No-Data.
 
-The weighted rasters, the cumulated raster and the binarized raster are put on the project subgroup. At the end of the computation a message box appear to ask if the application must delete other temporary rasters created in the folder *tmp/*.
+The weighted rasters, the cumulated raster, and the thresholded raster are added to the project subgroup. At the end of computation, a dialog asks whether to delete the intermediate temporary rasters from the *tmp/* folder.
 
-### 4.6) note about panel of layer
+### 4.6) Note on layer panel manipulation
 
-Manipulation of the panel of layers is not considered as the correct way to add, delete or modify a project and may cause unexpected behavior, nevertheless there are many protections:
+Direct manipulation of the layer panel is not the intended way to manage projects and may cause unexpected behaviour. However, several protections are in place:
 
-- create a subgroup in the group *Projects* will be considered as the creation of a new project (a layer *project_name* is created when the project is selected).
-- renaming a project with the same name of another is impossible.
-- no founded layers in a project will be indicated in the list of constraints.
+- Creating a subgroup inside **Projects** is treated as a new project creation (a *project_config* layer is created when the project is first selected).
+- Renaming a project to an existing name is prevented.
+- Layers not found on disk are flagged in the constraint list.
 
 ## 5) Development
 
-### 5.1) general
+### 5.1) General
 
-There are seven classes in this project:
+The project contains the following classes:
 
-- SuricateInstance which manages data of the instance;
-- SuricateAlgo which is used as computing task and contains algorithms required by the project;
-- Debug which facilitate debugging in the context of programming in the QGIS interface;
-- user interfaces classes:
-  - HeaderWidget which manages projects (creation, removing and selection);
-  - ConstraintWidget which manages constraints of the selected project;
-  - SuricateWidget which contains an HeaderWidget and a ConstraintWidget;
-  - SuricateDock which contains SuricateWidget  and may be docked on the interface as panel;
+- `SuricatesInstance`: manages application state and data access (files, layers, layer tree);
+- `SuricatesAlgo`: a `QgsTask` subclass that runs the raster computation; contains all processing algorithms;
+- `Debug`: logging and debugging utilities;
+- UI classes:
+  - `HeaderWidget`: project management (creation, deletion, selection);
+  - `ConstraintWidget`: constraint configuration for the selected project;
+  - `SuricatesWidget`: container for `HeaderWidget` and `ConstraintWidget`;
+  - `SuricatesDock`: dockable panel containing `SuricatesWidget`;
 
-There are two structures in this project:
+Two data structures are used:
 
-- ConstraintItem which contains information relative to a constraint of a project. Each project groups constraints in a list;
-- ConstraintType enumerate the possible constraints categories;
+- `ConstraintItem`: holds all parameters for a single constraint (layer path, inside/outside types, buffer, priority);
+- `ConstraintType`: enumeration of the five constraint categories.
 
-The function mainProgram is called at when the project is started: it close the previous instance of application if it exists and create a new instance. 
+The function `mainProgram()` is called at startup: it closes any existing instance and creates a new one.
 
-### 5.2) user interface
+### 5.2) User interface
 
-The user interface classes are imbricate as following:
+The UI classes are nested as follows:
 
-- SuricateDock contains SuricateWidget;
-- SuricateWidget contains HeaderWidget and ConstraintWidget;
+- `SuricatesDock` contains `SuricatesWidget`;
+- `SuricatesWidget` contains `HeaderWidget` and `ConstraintWidget`.
 
-![User interface classes imbrication](assets/GuiStructure.png)
+![User interface class nesting](assets/GuiStructure.png)
 
-The classes SuricateWidget and SuricateDock are widgets containers and are not interesting.
+`HeaderWidget` manages projects; `ConstraintWidget` manages constraints of the selected project. `SuricatesWidget` and `SuricatesDock` are simple containers.
 
-HeaderWidget aims to manage the projects and ConstrainsWidget manages the constraints of the selected project.
+### 5.3) Other classes
 
-### 5.3) the other classes
+`SuricatesInstance` handles three responsibilities:
 
-SuricateInstance manages three aspects:
+- application lifecycle (startup, shutdown, signal connections);
+- access to files and layers (creation, copy, naming);
+- layer tree management (group and layer insertion).
 
-- the starting of the application,
-- the access to files  and layers (creation, modification, ...)
-- the layer treeviewer (add group, add layer, ...) 
-
-SuricateAlgo is a task which computes a raster depending constraints. The input of this class is a list of ConstraintItem whom the attribute 'name' contains the absolute path of the layer. The classes manages layers created during the computation so also files and treewiewer. 
+`SuricatesAlgo` is a task that computes a raster from a list of `ConstraintItem` objects. Each item's `name` attribute contains the absolute path to the corresponding vector layer. The class manages all files and layer tree entries created during computation.
 
 ### 5.4) Generate documentation
 
-The application code uses the documentation syntax by *Doxygen*. Generate the *html* documentation requires next steps:
-- install [Doxygen](https://www.doxygen.nl/download.html);
-- execute the *Doxywizard* application;
-- load the *Doxygen* project: *doc/Doxyfile*;
-- on the tab *Run*, click on the button *Run doxygen*;
-- to show documentation on a web browser either click on the button *Show HTML output*, or execute the file *doc/html/index.html*.
+The source code uses [Doxygen](https://www.doxygen.nl/download.html) documentation syntax. To generate the HTML documentation:
 
-> Copyright of this file (readme.md) :
-> Author: Vincent Majorczyk *CDI-Technologies* (2020).
-> License: Permission is granted to copy, distribute and/or modify this document
-> under the terms of the [GNU Free Documentation License 1.3](fdl-1.4.md),
-> or any later version published by the Free Software Foundation;
-> with no Invariant Sections, no Front-Cover Texts, and no Back-Cover Texts.
+1. Install Doxygen;
+2. Open the *Doxywizard* application;
+3. Load the Doxygen project file: `doc/Doxyfile`;
+4. On the *Run* tab, click **Run doxygen**;
+5. Click **Show HTML output**, or open `doc/html/index.html` in a browser.
 
-The html version of the documentation is located at *doc/html/index.html* of the repository (Cf section 4.4).
+---
+
+> **Copyright notice (readme.md)**
+> Author: Vincent Majorczyk (2020-2026).
+> Licence: Permission is granted to copy, distribute and/or modify this document under the terms of the [GNU Free Documentation License 1.3](fdl-1.3.md) or any later version published by the Free Software Foundation, with no Invariant Sections, no Front-Cover Texts, and no Back-Cover Texts.
