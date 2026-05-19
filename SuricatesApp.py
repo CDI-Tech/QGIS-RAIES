@@ -68,7 +68,7 @@ class SuricatesInstance():
         self.dock = SuricatesDock(self)
         self.dock.setAttribute(Qt.WA_DeleteOnClose) # set behavior: delete dock widget when closed
         self.iface.addDockWidget(Qt.RightDockWidgetArea,self.dock)
-        QgsProject.instance().cleared.connect(self.closeInstance)
+        QgsProject.instance().aboutToBeCleared.connect(self.closeInstance)
         Debug.end("SuricatesInstance::__init__")
 
     ## @brief close suricates instance
@@ -79,7 +79,7 @@ class SuricatesInstance():
 
         # Disconnect from the project 'cleared' signal first, to avoid re-entrancy
         # if closeInstance is somehow called twice (e.g. during QGIS shutdown).
-        try: QgsProject.instance().cleared.disconnect(self.closeInstance)
+        try: QgsProject.instance().aboutToBeCleared.disconnect(self.closeInstance)
         except: pass
 
         # Disconnect all layer name signals before the layer tree is destroyed.
@@ -87,11 +87,18 @@ class SuricatesInstance():
         # destroyed during QgsProject::clear() — any dangling Python reference
         # to them causes an access violation.  We must release them here.
         if self.projectNode is not None:
+            # Disconnect signals directly from projectNode children without
+            # calling readProjects() — the layer tree may already be partially
+            # destroyed when aboutToBeCleared fires, and any traversal is unsafe.
             try:
-                projects = self.readProjects()
-                for x in projects.values():
-                    try: x.nameChanged.disconnect(self.onNameChanged)
-                    except: pass
+                for child in self.projectNode.children():
+                    if isinstance(child, QgsLayerTreeGroup):
+                        for subchild in child.children():
+                            if isinstance(subchild, QgsLayerTreeLayer):
+                                layer = subchild.layer()
+                                if layer:
+                                    try: layer.nameChanged.disconnect(self.onNameChanged)
+                                    except: pass
             except: pass
 
             try: self.projectNode.removedChildren.disconnect(self.onNodeDeleted)
@@ -99,8 +106,7 @@ class SuricatesInstance():
             try: self.projectNode.addedChildren.disconnect(self.onNodeCreated)
             except: pass
 
-            # Release the C++ object reference so Python cannot access it after
-            # QgsProject::clear() destroys the underlying layer tree.
+            # Release the C++ object reference before the layer tree is destroyed.
             self.projectNode = None
 
         # Cancel any running tasks to avoid callbacks into a destroyed project
@@ -145,9 +151,9 @@ class SuricatesInstance():
 
         # Re-connect to project cleared signal in case it was disconnected
         # (e.g. after a previous closeInstance call).
-        try: QgsProject.instance().cleared.disconnect(self.closeInstance)
+        try: QgsProject.instance().aboutToBeCleared.disconnect(self.closeInstance)
         except: pass
-        QgsProject.instance().cleared.connect(self.closeInstance)
+        QgsProject.instance().aboutToBeCleared.connect(self.closeInstance)
 
         # connection:
         # if user remove a child of the group 'Project' then the program call the method 'onNodeDeleted'
