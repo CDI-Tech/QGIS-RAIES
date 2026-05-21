@@ -7,67 +7,89 @@
 
 from enum import Enum
 
-## @brief corresponds to the differents constraint types
+## @brief Corresponds to the different constraint types.
 #
-# These constraint types are applyed to inside and outside of the area delimited by layer. There are 5 constraint types, so 25 possible combinations
-# ![constraint combinations](assets\constraints.svg)
+# These constraint types are applied to the inside and outside of the area
+# delimited by a layer.  With 6 types there are 36 possible combinations,
+# though Sanctuarized/Sanctuarized is reserved for newly added, unconfigured
+# layers and is not a valid computation state.
+#
+# ![constraint combinations](assets/constraints.svg)
 class ConstraintType(Enum):
-    ## @brief exclude the area
-    Sanctuarized=0
-    ## @brief near location to the area is prefered
-    Attractive=1
-    ## @brief far location to the area is prefered
-    Repulsive=2
-    ## @brief inside the area
-    Included=3
-    ## @brief uside the area
-    Excluded=4
-    ## @brief global working area of the project
-    Map=5
+    ## @brief Zone excluded from the result (No-Data).
+    Sanctuarized = 0
+    ## @brief Gradient: near the boundary is preferred (value 0 near, 1 far).
+    Attractive   = 1
+    ## @brief Gradient: far from the boundary is preferred (value 1 near, 0 far).
+    Repulsive    = 2
+    ## @brief Zone receives value 0 (best score).
+    Included     = 3
+    ## @brief Zone receives the priority value (high score).
+    Excluded     = 4
+    ## @brief Special type: marks the global working area of the project.
+    Map          = 5
+    ## @brief Not yet configured — placeholder for newly added layers.
+    Undefined    = 6
 
-## @brief structure for constraint information
+
+## @brief Structure holding all parameters for a single constraint layer.
 #
-# This structure is an interface between the file of the layer *config_project*, the ConstraintWidget (user interface) and the SuricatesAlgo (task)
+# This structure acts as the interface between:
+# - the *project_config* layer file (persistent storage),
+# - the ConstraintItemWidget / ConstraintWidget (user interface),
+# - and SuricatesAlgo (computation task).
 #
-# There is minor difference between the requierement of the SuricatesAlgo and the other (*config_project* and ConstraintWidget).
-# This concerns the attribute name:
-# - for SuricatesAlgo: the name must be the absolute path of the layer
-# - for the others: the name is the one used in the layer file *config_project*, that means the name of the layer in the panel of layers.
+# **Note on the `name` attribute:**
+# - For SuricatesAlgo the name must be the *absolute path* of the layer file.
+# - For the UI and project_config it is the *display name* shown in the
+#   QGIS layer panel.
 #
-# typeIn and typeOut are the constraint types applyed to the layer
-# If typeIn is set to the special type ConstraintType.Map, then typeOut is ignored in the process and the priority attribute contains the threshold parameter instead (thresholf used on the cumulation of rasters)
+# **Note on the Map type:**
+# When typeIn == ConstraintType.Map, typeOut is ignored during computation
+# and the `priority` attribute stores the threshold value (0–100) instead
+# of the layer weight.
 class ConstraintItem:
     ## @var name
-    # name of the layer: either the absolute path of the layer for the SuricatesAlgo, or the name displayed in the panel of layers
+    # Layer name (display name for UI/config; absolute path for SuricatesAlgo).
 
     ## @var buffer
-    # distance considered from layer items
+    # Buffer distance in metres around the layer's geometry.
 
     ## @var priority
-    # priority of the current layer.
-    # This set a weight to each layers of the list of constrained layers to define the importance of the layer in the computation result.
-    #
-    # In the case of a layer with the special type ConstraintType.Map, the attribute is used to store the threshold value.
+    # Layer weight (1–10, stored as value × 10, i.e. 10–100).
+    # For a Map layer this holds the threshold value (0–100) instead.
 
     ## @var typeIn
-    # constraint type used inside the zone of the layer (ConstraintType)
+    # Constraint type applied inside the geometry (ConstraintType).
 
     ## @var typeOut
-    # typeOut constraint type used outside the zone of the layer (ConstraintType)
+    # Constraint type applied outside the geometry (ConstraintType).
 
     ## @var exists
-    # used to determine if the layer associated to the constraint already exists.
+    # True if the associated layer file exists on disk.
 
-    ## @brief constructor
-    # @param name name of the layer
-    # @param buffer distance considered from layer items
-    # @param priority priority of the current layer
-    # @param typeIn constraint type used inside the zone of the layer
-    # @param typeOut constraint type used outside the zone of the layer
-    def __init__(self, name, buffer = 50, priority = 100, typeIn:ConstraintType = ConstraintType.Sanctuarized, typeOut:ConstraintType = ConstraintType.Sanctuarized):
-        self.name = name
-        self.buffer = buffer
+    ## @var progress
+    # Computation progress for this layer (0–100).
+    # Used by ConstraintItemWidget to update its progress bar during a run.
+    # Stored here to allow SuricatesAlgo to update it without needing a
+    # direct reference to the widget.
+
+    ## @brief Constructor.
+    # @param name     Layer name or absolute path.
+    # @param buffer   Buffer distance in metres (default 100 m).
+    # @param priority Layer weight × 10, or threshold for Map layers (default 100).
+    # @param typeIn   Constraint type inside the geometry (default Undefined).
+    # @param typeOut  Constraint type outside the geometry (default Undefined).
+    def __init__(self,
+                 name:     str,
+                 buffer:   int           = 100,
+                 priority: int           = 100,
+                 typeIn:   ConstraintType = ConstraintType.Sanctuarized,
+                 typeOut:  ConstraintType = ConstraintType.Sanctuarized):
+        self.name     = name
+        self.buffer   = buffer
         self.priority = priority
-        self.typeIn = typeIn
-        self.typeOut = typeOut
-        self.exists = True
+        self.typeIn   = typeIn
+        self.typeOut  = typeOut
+        self.exists   = True
+        self.progress = 0

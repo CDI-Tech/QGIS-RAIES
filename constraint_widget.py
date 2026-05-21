@@ -5,629 +5,357 @@
 #
 # @par CDI-Technologies, Vincent Majorczyk
 
-## @brief simple dockwidget (panel) which contains a SuricatesWidget
-#
-# #
-# ![User interface classes imbrication](assets\GuiStructure.png)
-from qgis.core import *
-from qgis.gui import *
-from qgis.PyQt.QtGui import *
-from qgis.PyQt.QtCore import *
-from qgis.PyQt.QtWidgets import *
+from qgis.core import Qgis, QgsApplication
+from qgis.PyQt.QtGui import QIcon
+from qgis.PyQt.QtCore import Qt, QSize
+from qgis.PyQt.QtWidgets import (
+    QWidget, QVBoxLayout, QHBoxLayout, QFormLayout,
+    QListWidget, QListWidgetItem, QSpinBox, QPushButton, QMessageBox
+)
 
 from .debug import Debug
 from .constraint_item import ConstraintType, ConstraintItem
+from .constraint_item_widget import ConstraintItemWidget, ICON_SIZE
 
-## @brief widget which contains parameter interface for constrains configuration
+
+
+## @brief Widget containing the constraint list and compute controls.
 #
-# this interface contains:
-# - a list interface to add, remove and select a constraints;
-# - a group with radiobox and field to select type and parameter of the selected constraint (from the list interface);
-# - a field for threshold selection and a button to start computation;
+# Replaces the previous QTreeWidget + groupbox layout with a QListWidget
+# whose items each embed a ConstraintItemWidget.  Configuration is done
+# inline — no separate Save button is needed.
 #
-# ![User interface classes imbrication](assets\GuiStructure.png)
-#
-# ![User interface: list of constrained layers](assets\UserManual_ListOfConstraints.png)
-#
-# ![User interface: constraints configuration](assets\UserManual_ConstraintConfiguration.png)
+# Layout:
+#   [QListWidget  with ConstraintItemWidgets + "+" add item at bottom]
+#   [threshold spinbox]
+#   [Compute button]
 class ConstraintWidget(QWidget):
-    ## @var suricates
-    # current SuricatesInstance
 
-    ## @var w_listConstraints
-    # QTreeWidget for a list of constrained layers
-
-    ## @var w_buttonAdd
-    # QPushButton for adding new constrained layer
-
-    ## @var w_buttonDel
-    # QPushButton for deletion of the selected constrained layer
-
-    ## @var w_nearInRB
-    # QRadioButton for the 'Near' option for the 'Inside' area
-
-    ## @var w_farInRB
-    # QRadioButton for the 'Far' option for the 'Inside' area
-
-    ## @var w_inInRB
-    # QRadioButton for the 'In' option for the 'Inside' area
-
-    ## @var w_outInRB
-    # QRadioButton for the 'Out' option for the 'Inside' area
-
-    ## @var w_excludeInRB
-    # QRadioButton for the 'Exclude' option for the 'Inside' area
-
-    ## @var w_nearOutRB
-    # QRadioButton for the 'Near' option for the 'Outside' area
-
-    ## @var w_farOutRB
-    # QRadioButton for the 'Far' option for the 'Outside' area
-
-    ## @var w_inOutRB
-    # QRadioButton for the 'In' option for the 'Outside' area
-
-    ## @var w_outOutRB
-    # QRadioButton for the 'Out' option for the 'Outside' area
-
-    ## @var w_excludeOutRB
-    # QRadioButton for the 'Exclude' option for the 'Outside' area
-
-    ## @var w_buffer
-    # QSpinBox for the buffer (distance around layer items)
-
-    ## @var w_priority
-    # QSpinBox for the priority/weight of the raster
-
-    ## @var w_save
-    # QPushButton to save the parameters of the constrained layer
-
-    ## @var w_compute
-    # QPushButton to run computation
-    # @see SuricatesAlgo.run()
-
-    ## @var w_threshold
-    # QSpinBox for the threshold used on the cumulation raster
-
-    ## @var currentProject
-    # name of the current project (string)
-
-    ## @brief constructor of the widget
-    # @param parent parent widget (QWidget)
+    ## @brief Constructor.
+    # @param parent  Parent SuricatesWidget (must expose .suricates).
     def __init__(self, parent=None):
         QWidget.__init__(self, parent)
         Debug.begin("ConstraintWidget::__init__")
 
         self.suricates = parent.suricates
 
-        selectl = QVBoxLayout(self)
-        selectl2 = QHBoxLayout(self)
-        self.w_buttonAdd = QPushButton("Add", self)
-        self.w_buttonDel = QPushButton("Del", self)
-        selectl2.addWidget(self.w_buttonAdd)
-        selectl2.addWidget(self.w_buttonDel)
-        selectl.addLayout(selectl2)
+        ## @var currentProject
+        # Name of the currently selected RAIES project (str or None).
+        self.currentProject = None
 
-        self.w_listConstraints = QTreeWidget(self)
-        self.w_listConstraints.setHeaderLabels(["Name", "Inside", "Outside", "Distance", "Weight"])
-        selectl.addWidget(self.w_listConstraints)
+        self._buildUi()
 
-        groupw = QGroupBox("Constraints on selected layer:", self)
-        groupl = QVBoxLayout()
-        groupc = QHBoxLayout()
-        groupc1 = QVBoxLayout()
-        groupc2 = QVBoxLayout()
+        Debug.end("ConstraintWidget::__init__")
 
-        self.w_farInRB = QRadioButton("Repulsive", self)
-        self.w_nearInRB = QRadioButton("Attractive", self)
-        self.w_inInRB = QRadioButton("Included", self)
-        self.w_outInRB = QRadioButton("Excluded", self)
-        self.w_outInRB.setToolTip("only applies to one selected layer whereas ")
-        self.w_excludeInRB = QRadioButton("Sanctuarized", self)
-        self.w_excludeInRB.setToolTip("applies accross all project layers.")
+    # -----------------------------------------------------------------------
+    # UI construction
+    # -----------------------------------------------------------------------
 
-        self.w_farOutRB = QRadioButton("Repulsive", self)
-        self.w_nearOutRB = QRadioButton("Attractive", self)
-        self.w_inOutRB = QRadioButton("Included", self)
-        self.w_outOutRB = QRadioButton("Excluded", self)
-        self.w_outOutRB.setToolTip("only applies to one selected layer whereas ")
-        self.w_excludeOutRB = QRadioButton("Sanctuarized", self)
-        self.w_excludeOutRB.setToolTip("applies accross all project layers.")
+    def _buildUi(self):
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(4, 4, 4, 4)
+        layout.setSpacing(4)
 
-        groupclw = QGroupBox("Inside the object")
-        groupc1.addWidget(self.w_farInRB)
-        groupc1.addWidget(self.w_nearInRB)
-        groupc1.addWidget(self.w_inInRB)
-        groupc1.addWidget(self.w_outInRB)
-        groupc1.addWidget(self.w_excludeInRB)
+        # -- Constraint list -------------------------------------------------
+        self.w_listConstraints = QListWidget(self)
+        self.w_listConstraints.setSpacing(2)
+        self.w_listConstraints.setSelectionMode(QListWidget.NoSelection)
+        self.w_listConstraints.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        layout.addWidget(self.w_listConstraints, 1)
 
-        groupc2.addWidget(self.w_farOutRB)
-        groupc2.addWidget(self.w_nearOutRB)
-        groupc2.addWidget(self.w_inOutRB)
-        groupc2.addWidget(self.w_outOutRB)
-        groupc2.addWidget(self.w_excludeOutRB)
-
-        groupc1b = QGroupBox("Inside:")
-        groupc1b.setToolTip("Contraint inside the object")
-        groupc1b.setLayout(groupc1)
-        groupc2b = QGroupBox("Outside:")
-        groupc2b.setToolTip("Contraint on the outside of object")
-        groupc2b.setLayout(groupc2)
-
-        groupc.addWidget(groupc1b)
-        groupc.addWidget(groupc2b)
-        groupl.addLayout(groupc)
-
-        formL = QFormLayout()
-        self.w_buffer = QSpinBox()
-        self.w_buffer.setMinimum(0)
-        self.w_buffer.setMaximum(30000)
-        self.w_buffer.setSingleStep(100)
-        self.w_buffer.setSuffix(" m")
-
-        self.w_priority = QSpinBox()
-        self.w_priority.setMinimum(1)
-        self.w_priority.setMaximum(10)
-        self.w_priority.setSingleStep(1)
-
-        formL.addRow("Neighborhood distance (m)", self.w_buffer)
-        formL.addRow("Layer’s weight (1-10)", self.w_priority)
-
-        self.w_save = QPushButton("Save")
-        layout = QHBoxLayout()
-        layout.addStretch()
-        layout.addWidget(self.w_save)
-
-        self.w_compute = QPushButton("Compute")
-
+        # -- Threshold + Compute ---------------------------------------------
+        bottom = QFormLayout()
         self.w_threshold = QSpinBox()
         self.w_threshold.setMinimum(0)
         self.w_threshold.setMaximum(100)
         self.w_threshold.setSingleStep(10)
-        thresholdform = QFormLayout()
-        thresholdform.addRow("Final Accepted Constraint (0<FAC>100)", self.w_threshold)
+        self.w_threshold.setSuffix(" %")
+        bottom.addRow("Final Accepted Constraint (FAC)", self.w_threshold)
+        layout.addLayout(bottom)
 
-        groupl.addLayout(formL)
-        groupl.addLayout(layout)
-        groupw.setLayout(groupl)
-        selectl.addWidget(groupw)
-        selectl.addLayout(thresholdform)
-        selectl.addWidget(self.w_compute)
-        self.setLayout(selectl)
+        self.w_compute = QPushButton("Compute")
+        layout.addWidget(self.w_compute)
 
-        self.w_buttonAdd.clicked.connect(self.onAddNewConstraint)
-        self.w_buttonDel.clicked.connect(self.onDeleteConstraint)
-        self.w_listConstraints.itemSelectionChanged.connect(self.onSelectedConstraintChanged)
-        self.w_save.clicked.connect(self.onSave)
+        self.setLayout(layout)
+
+        # -- Signals ---------------------------------------------------------
         self.w_compute.clicked.connect(self.onCompute)
         self.w_threshold.valueChanged.connect(self.onChangeThreshold)
 
-        Debug.end("ConstraintWidget::__init__")
+    # -----------------------------------------------------------------------
+    # Public API
+    # -----------------------------------------------------------------------
 
-    ## @brief set the current project and update the list of constraints
-    # @param name of the current project
+    ## @brief Set the active project and repopulate the list.
+    # @param name  Project name string, or None to clear.
     def setProject(self, name):
-        if name != None:
+        if name is not None:
             Debug.begin("ConstraintWidget::setProject:" + name)
         else:
             Debug.begin("ConstraintWidget::setProject: (Empty project)")
-
         self.currentProject = name
         self.updateProject()
         Debug.end("ConstraintWidget::setProject")
 
-    ## @brief update the list of constraints
+    ## @brief Repopulate the list from the current project's config layer.
     def updateProject(self):
-        from .SuricatesApp import SuricatesInstance
-
         Debug.begin("ConstraintWidget::updateProject")
-        self.w_save.setEnabled(False)
 
-        self.setOptionEnabled(False)
-        if self.currentProject == None:
+        self.w_listConstraints.clear()
+
+        if self.currentProject is None:
             self.setEnabled(False)
             Debug.end("ConstraintWidget::updateProject (Empty project)")
             return
-        else:
-            self.setEnabled(True)
 
+        self.setEnabled(True)
         project = self.suricates.getProject(self.currentProject)
-        if project == None:
+        if project is None:
             Debug.end("ConstraintWidget::updateProject (Error 1)")
             return
-        Debug.print("selection:" + project.name())
+
         configLayer = self.suricates.getConfig(project)
-        if configLayer == None:
+        if configLayer is None:
             Debug.end("ConstraintWidget::updateProject (Error 2)")
             return
 
         constraintsList = self.suricates.getConstraintsFromConfig(project, configLayer)
 
-        self.w_listConstraints.clear()
-        # current code here
         for constraint in constraintsList:
-            twi = QTreeWidgetItem([constraint.name, SuricatesInstance.ConstraintTypeToString(constraint.typeIn),
-                                   SuricatesInstance.ConstraintTypeToString(constraint.typeOut), str(constraint.buffer),
-                                   str(constraint.priority)])
-            if not constraint.exists:
-                twi.setIcon(0, QIcon(":/images/themes/default/mActionRemove.svg"))
-            self.w_listConstraints.addTopLevelItem(twi)
             if constraint.typeIn == ConstraintType.Map:
-                Debug.print("threshold:" + str(constraint.priority) + " " + str(constraint.priority))
                 self.w_threshold.blockSignals(True)
                 self.w_threshold.setValue(int(constraint.priority))
                 self.w_threshold.blockSignals(False)
+            else:
+                self._addItemWidget(constraint)
+
+        # "+" button at the bottom of the list
+        self._addPlusButton()
 
         Debug.end("ConstraintWidget::updateProject")
 
-    ## @brief update the properties of the selected constraint
-    # @param name name of the constraint
-    def updateOption(self, name):
-        Debug.begin("ConstraintWidget::updateOption")
-        project = self.suricates.getProject(self.currentProject)
-        if project == None:
-            Debug.end("ConstraintWidget::updateOption (Error 1)")
-            return
-        Debug.print("selection:" + project.name())
-        configLayer = self.suricates.getConfig(project)
-        if configLayer == None:
-            Debug.end("ConstraintWidget::updateOption (Error 2)")
-            return
+    # -----------------------------------------------------------------------
+    # List management helpers
+    # -----------------------------------------------------------------------
 
-        constraintsList = self.suricates.getConstraintsFromConfig(project, configLayer)
+    def _addItemWidget(self, constraint: ConstraintItem):
+        """Append a ConstraintItemWidget row to the list."""
+        item_widget = ConstraintItemWidget(constraint, self)
+        item_widget.changed.connect(self._onConstraintChanged)
+        item_widget.deleted.connect(self.onDeleteConstraint)
 
-        current = None
-        for constraint in constraintsList:
-            if constraint.name == name:
-                current = constraint
+        list_item = QListWidgetItem(self.w_listConstraints)
+        list_item.setSizeHint(QSize(self.w_listConstraints.width(), ICON_SIZE + 12))
+        self.w_listConstraints.addItem(list_item)
+        self.w_listConstraints.setItemWidget(list_item, item_widget)
 
-        if current == None:
-            self.setOptionEnabled(False)
-            Debug.end("ConstraintWidget::updateOption (Error 3)")
-            return
+        # Update the list item height whenever the widget changes page
+        def _onSizeChanged(li=list_item, iw=item_widget):
+            li.setSizeHint(QSize(self.w_listConstraints.width(),
+                                iw.sizeHint().height()))
+        item_widget.sizeChanged.connect(_onSizeChanged)
 
-        self.w_save.setEnabled(True)
+    def _addPlusButton(self):
+        """Append the '+' add-layer button as the last list item."""
+        btn = QPushButton(self)
+        btn.setIcon(QIcon(":/images/themes/default/mActionAdd.svg"))
+        btn.setText("  Add selected layer")
+        btn.setIconSize(QSize(20, 20))
+        btn.setStyleSheet(
+            "QPushButton { border: 1px dashed #aaa; border-radius: 6px;"
+            " color: #666; padding: 6px; text-align: left; }"
+            "QPushButton:hover { border-color: #4a90e2; color: #4a90e2; }"
+        )
+        btn.clicked.connect(self.onAddNewConstraint)
 
-        if current.typeIn == ConstraintType.Map:
-            self.w_nearInRB.setEnabled(False)
-            self.w_farInRB.setEnabled(False)
-            self.w_inInRB.setEnabled(False)
-            self.w_outInRB.setEnabled(False)
-            self.w_excludeInRB.setEnabled(False)
+        list_item = QListWidgetItem(self.w_listConstraints)
+        list_item.setSizeHint(QSize(self.w_listConstraints.width(), 40))
+        self.w_listConstraints.addItem(list_item)
+        self.w_listConstraints.setItemWidget(list_item, btn)
 
-            self.w_nearInRB.setChecked(False)
-            self.w_farInRB.setChecked(False)
-            self.w_inInRB.setChecked(False)
-            self.w_outInRB.setChecked(False)
-            self.w_excludeInRB.setChecked(False)
+    def _iterItemWidgets(self):
+        """Yield every ConstraintItemWidget currently in the list."""
+        for i in range(self.w_listConstraints.count()):
+            w = self.w_listConstraints.itemWidget(self.w_listConstraints.item(i))
+            if isinstance(w, ConstraintItemWidget):
+                yield w
 
-            self.w_nearOutRB.setEnabled(False)
-            self.w_farOutRB.setEnabled(False)
-            self.w_inOutRB.setEnabled(False)
-            self.w_outOutRB.setEnabled(False)
-            self.w_excludeOutRB.setEnabled(False)
+    def _findItemWidget(self, name: str):
+        """Return the ConstraintItemWidget whose constraint.name matches, or None."""
+        for w in self._iterItemWidgets():
+            if w.constraint().name == name:
+                return w
+        return None
 
-            self.w_nearOutRB.setChecked(False)
-            self.w_farOutRB.setChecked(False)
-            self.w_inOutRB.setChecked(False)
-            self.w_outOutRB.setChecked(False)
-            self.w_excludeOutRB.setChecked(False)
+    def _setAllProgress(self, value: int):
+        """Set all item widgets to progress page with the given value."""
+        for w in self._iterItemWidgets():
+            w.setProgress(value)
 
-            self.w_buffer.setEnabled(True)
-            self.w_priority.setEnabled(False)
-        else:
-            self.setOptionEnabled(True)
-            if current.typeIn == ConstraintType.Attractive:
-                self.w_nearInRB.setChecked(True)
-            elif current.typeIn == ConstraintType.Repulsive:
-                self.w_farInRB.setChecked(True)
-            elif current.typeIn == ConstraintType.Included:
-                self.w_inInRB.setChecked(True)
-            elif current.typeIn == ConstraintType.Excluded:
-                self.w_outInRB.setChecked(True)
-            elif current.typeIn == ConstraintType.Sanctuarized:
-                self.w_excludeInRB.setChecked(True)
+    def _setAllInfo(self):
+        """Switch all item widgets back to info page."""
+        for w in self._iterItemWidgets():
+            w.showInfo()
 
-            if current.typeOut == ConstraintType.Attractive:
-                self.w_nearOutRB.setChecked(True)
-            elif current.typeOut == ConstraintType.Repulsive:
-                self.w_farOutRB.setChecked(True)
-            elif current.typeOut == ConstraintType.Included:
-                self.w_inOutRB.setChecked(True)
-            elif current.typeOut == ConstraintType.Excluded:
-                self.w_outOutRB.setChecked(True)
-            elif current.typeOut == ConstraintType.Sanctuarized:
-                self.w_excludeOutRB.setChecked(True)
+    # -----------------------------------------------------------------------
+    # Slots
+    # -----------------------------------------------------------------------
 
-        self.w_buffer.setValue(int(current.buffer))
-        self.w_priority.setValue(int(current.priority / 10))
-
-        Debug.end("ConstraintWidget::updateOption")
-
-    ## @brief enable radiobuttons and fields of constraints configuration
-    # @param enabled activate (or desactivate) the radiobox (contraints type) and spinbox (buffer ans priority)
-    def setOptionEnabled(self, enabled):
-        Debug.begin("ConstraintWidget::setOptionEnabled")
-        self.w_nearInRB.setEnabled(enabled)
-        self.w_farInRB.setEnabled(enabled)
-        self.w_inInRB.setEnabled(enabled)
-        self.w_outInRB.setEnabled(enabled)
-        self.w_excludeInRB.setEnabled(enabled)
-
-        self.w_nearOutRB.setEnabled(enabled)
-        self.w_farOutRB.setEnabled(enabled)
-        self.w_inOutRB.setEnabled(enabled)
-        self.w_outOutRB.setEnabled(enabled)
-        self.w_excludeOutRB.setEnabled(enabled)
-
-        self.w_buffer.setEnabled(enabled)
-        self.w_priority.setEnabled(enabled)
-        Debug.end("ConstraintWidget::setOptionEnabled")
-
-    ## get the configuration from name
-    # @param name name of the constraint
-    # @return the constraint data
-    def getConstraintFromName(self, name):
-        Debug.begin("ConstraintWidget::getConstraintFromName")
-        project = self.suricates.getProject(self.currentProject)
-        if project == None:
-            Debug.end("ConstraintWidget::getConstraintFromName (Error 1)")
-            return
-        Debug.print("selection:" + project.name())
-        configLayer = self.suricates.getConfig(project)
-        if configLayer == None:
-            Debug.end("ConstraintWidget::getConstraintFromName (Error 2)")
-            return
-
-        constraintsList = self.suricates.getConstraintsFromConfig(project, configLayer)
-
-        current = None
-        for constraint in constraintsList:
-            if constraint.name == name:
-                current = constraint
-
-        if current == None:
-            self.setOptionEnabled(False)
-            Debug.end("ConstraintWidget::getConstraintFromName (Error 3)")
-            return
-
-        Debug.end("ConstraintWidget::getConstraintFromName")
-        return current
-
-    ## @brief compute constraints when user click button
-    #
-    # execute the process to create raster of constraints
-    def onCompute(self):
-        from .suricates_algo import SuricatesAlgo
-        Debug.begin("ConstraintWidget::onCompute")
-        project = self.suricates.getProject(self.currentProject)
-        if project == None:
-            Debug.end("ConstraintWidget::onCompute (Error 1)")
-            return
-        Debug.print("selection:" + project.name())
-        configLayer = self.suricates.getConfig(project)
-        if configLayer == None:
-            Debug.end("ConstraintWidget::onCompute (Error 2)")
-            return
-
-        constraintsList = self.suricates.getConstraintsFromConfig(project, configLayer)
-        intputList = list()
-
-        for constraint in constraintsList:
-            layer = self.suricates.getLayer(project, constraint.name)
-            if (layer != None and layer.layer() != None):
-                constraint.name = layer.layer().source()
-                intputList.append(constraint)
-
-        a = SuricatesAlgo(intputList, self.currentProject, self.suricates)
-        a.deleteTmp = QMessageBox.question(None, "delete temporary files?",
-                                           "do you want delete temporary file?") == QMessageBox.StandardButton.Yes
-
-        self.suricates.tasks.append(a)
-        # a.run()
-        # a.finished(True)
-        QgsApplication.taskManager().addTask(a)
-
-        Debug.end("ConstraintWidget::onCompute")
-
-    ## @brief save parameters of the current constraint when user click button
-    def onSave(self):
-        from .SuricatesApp import SuricatesInstance
-        # get the type
-        Debug.begin("ConstraintWidget::onSave")
-        if not self.w_priority.isEnabled():
-            typeIn = ConstraintType.Map
-        elif self.w_nearInRB.isChecked():
-            typeIn = ConstraintType.Attractive
-        elif self.w_farInRB.isChecked():
-            typeIn = ConstraintType.Repulsive
-        elif self.w_inInRB.isChecked():
-            typeIn = ConstraintType.Included
-        elif self.w_outInRB.isChecked():
-            typeIn = ConstraintType.Excluded
-        elif self.w_excludeInRB.isChecked():
-            typeIn = ConstraintType.Sanctuarized
-        else:
-            Debug.end("ConstraintWidget::onSave (Error 1)")
-            return
-
-        if typeIn == ConstraintType.Map:
-            typeOut = ConstraintType.Excluded
-        elif self.w_nearOutRB.isChecked():
-            typeOut = ConstraintType.Attractive
-        elif self.w_farOutRB.isChecked():
-            typeOut = ConstraintType.Repulsive
-        elif self.w_inOutRB.isChecked():
-            typeOut = ConstraintType.Included
-        elif self.w_outOutRB.isChecked():
-            typeOut = ConstraintType.Excluded
-        elif self.w_excludeOutRB.isChecked():
-            typeOut = ConstraintType.Sanctuarized
-        else:
-            Debug.end("ConstraintWidget::onSave (Error 1)")
-            return
-
-        Debug.print("type:" + SuricatesInstance.ConstraintTypeToString(type))
-
-        # get the distance
-        distance = self.w_buffer.value()
-        Debug.print("distance:" + str(distance))
-
-        # get the priority
-        priority = self.w_priority.value() * 10
-        Debug.print("priority:" + str(priority))
-
-        list = self.w_listConstraints.selectedItems()
-        if len(list) == 0:
-            self.setOptionEnabled(False)
-            Debug.end("ConstraintWidget::onSave (Error 2)")
-            return
-
-        treeitem = list[0]
-        name = treeitem.text(0)
-
-        constraint = self.getConstraintFromName(name)
-        if constraint == None:
-            Debug.end("ConstraintWidget::onSave (Error 3)")
-            return
-
-        constraint.typeIn = typeIn
-        constraint.typeOut = typeOut
-        constraint.priority = priority
-        constraint.buffer = distance
-
+    ## @brief Auto-save handler: called when a ConstraintItemWidget emits changed().
+    def _onConstraintChanged(self, constraint: ConstraintItem):
+        Debug.begin("ConstraintWidget::_onConstraintChanged")
         if not self.suricates.saveConstraint(self.currentProject, constraint, False):
-            self.suricates.iface.messageBar().pushMessage("Faillure!", "save constraint:", level=Qgis.Critical)
-            Debug.end("ConstraintWidget::onSave (Error 4)")
-            return
+            self.suricates.iface.messageBar().pushMessage(
+                "Failure!", "save constraint:", level=Qgis.Critical)
+        Debug.end("ConstraintWidget::_onConstraintChanged")
 
-        treeitem.setText(1, SuricatesInstance.ConstraintTypeToString(constraint.typeIn))
-        treeitem.setText(2, SuricatesInstance.ConstraintTypeToString(constraint.typeOut))
-        treeitem.setText(3, str(distance))
-        treeitem.setText(4, str(priority))
-
-        Debug.end("ConstraintWidget::onSave")
-        return
-
-    ## @brief click on the button to create a new constraint
-    #
-    # @msc
-    # Sender,Receiver;
-    # Sender->Receiver [label="Command()", URL="\ref Receiver::Command()"];
-    # Sender<-Receiver [label="Ack()", URL="\ref Ack()", ID="1"];
-    # @endmsc
-    #
+    ## @brief Add the currently selected QGIS layer as a new constraint.
     def onAddNewConstraint(self):
         from .SuricatesApp import SuricatesInstance
         Debug.begin("ConstraintWidget::onAddNewConstraint")
+
         project = self.suricates.getProject(self.currentProject)
-        if project == None:
+        if project is None:
             Debug.end("ConstraintWidget::onAddNewConstraint (Error 1)")
             return
-        Debug.print("selection:" + project.name())
+
         configLayer = self.suricates.getConfig(project)
-        if configLayer == None:
+        if configLayer is None:
             Debug.end("ConstraintWidget::onAddNewConstraint (Error 2)")
             return
 
         constraintsList = self.suricates.getConstraintsFromConfig(project, configLayer)
-
-        haveMap = False
-        for c in constraintsList:
-            if c.typeIn == ConstraintType.Map:
-                haveMap = True
+        haveMap = any(c.typeIn == ConstraintType.Map for c in constraintsList)
 
         layer = self.suricates.copyCurrentLayer(self.currentProject)
-        if layer == None:
-            Debug.end("ConstraintWidget::onAddNewConstraint (faillure)")
+        if layer is None:
+            Debug.end("ConstraintWidget::onAddNewConstraint (failure)")
             return
 
         if haveMap:
+            # New unconfigured constraint: S/S signals "needs configuration"
             constraint = ConstraintItem(layer.name())
         else:
             constraint = ConstraintItem(layer.name(), 0, 5, ConstraintType.Map)
 
         if not self.suricates.saveConstraint(self.currentProject, constraint, True):
-            self.suricates.iface.messageBar().pushMessage("Faillure!", "create new constraint:", level=Qgis.Critical)
-            Debug.end("ConstraintWidget::onAddNewConstraint (faillure)")
+            self.suricates.iface.messageBar().pushMessage(
+                "Failure!", "create new constraint:", level=Qgis.Critical)
+            Debug.end("ConstraintWidget::onAddNewConstraint (failure)")
             return
 
-        twi = QTreeWidgetItem([constraint.name, SuricatesInstance.ConstraintTypeToString(constraint.typeIn),
-                               SuricatesInstance.ConstraintTypeToString(constraint.typeOut), str(constraint.buffer),
-                               str(constraint.priority)])
-        self.w_listConstraints.addTopLevelItem(twi)
+        # Remove the '+' button, add the new item, then re-add the '+' button
+        # (it is always the last item)
+        last = self.w_listConstraints.count() - 1
+        self.w_listConstraints.takeItem(last)
+        self._addItemWidget(constraint)
+        self._addPlusButton()
 
-        self.suricates.iface.messageBar().pushMessage("Success!", "create new constraint", level=Qgis.Success,
-                                                      duration=3)
+        self.suricates.iface.messageBar().pushMessage(
+            "Success!", "create new constraint", level=Qgis.Success, duration=3)
         Debug.end("ConstraintWidget::onAddNewConstraint (success)")
-        return
 
-    ## @brief click on a item of the constraint list
-    def onSelectedConstraintChanged(self):
-        Debug.begin("ConstraintWidget::onSelectedConstraintChanged")
-        list = self.w_listConstraints.selectedItems()
-        if len(list) == 0:
-            self.setOptionEnabled(False)
-            Debug.end("ConstraintWidget::onSelectedConstraintChanged")
-            return
-
-        current = list[0]
-        name = current.text(0)
-        Debug.print(name)
-        self.updateOption(name)
-
-        Debug.end("ConstraintWidget::onSelectedConstraintChanged")
-        return
-
-    ## @brief click on the button to delete constraint
-    def onDeleteConstraint(self):
+    ## @brief Delete the constraint whose layer name is *name*.
+    # Connected to ConstraintItemWidget.deleted signal.
+    def onDeleteConstraint(self, name: str):
         Debug.begin("ConstraintWidget::onDeleteConstraint")
-        list = self.w_listConstraints.selectedItems()
-        if len(list) == 0:
-            self.setOptionEnabled(False)
-            Debug.end("ConstraintWidget::onSelectedConstraintChanged")
-            return
-
-        current = list[0]
-        name = current.text(0)
-
         self.suricates.deleteConstraint(self.currentProject, name)
         self.updateProject()
-
         Debug.end("ConstraintWidget::onDeleteConstraint")
-        return
 
-    ## @brief change the value of the threshold
-    def onChangeThreshold(self, value):
+    ## @brief Save the threshold value when the spinbox changes.
+    def onChangeThreshold(self, value: int):
         Debug.begin("ConstraintWidget::onChangeThreshold")
         project = self.suricates.getProject(self.currentProject)
-        if project == None:
+        if project is None:
             Debug.end("ConstraintWidget::onChangeThreshold (Error 1)")
             return
-        Debug.print("selection:" + project.name())
+
         configLayer = self.suricates.getConfig(project)
-        if configLayer == None:
+        if configLayer is None:
             Debug.end("ConstraintWidget::onChangeThreshold (Error 2)")
             return
 
         constraintsList = self.suricates.getConstraintsFromConfig(project, configLayer)
-
-        current = None
-        for constraint in constraintsList:
-            if constraint.typeIn == ConstraintType.Map:
-                current = constraint
-
-        if current == None:
+        current = next((c for c in constraintsList if c.typeIn == ConstraintType.Map), None)
+        if current is None:
             Debug.end("ConstraintWidget::onChangeThreshold (Error 3)")
             return
 
         current.priority = value
+        if not self.suricates.saveConstraint(self.currentProject, current, False):
+            self.suricates.iface.messageBar().pushMessage(
+                "Failure!", "save constraint:", level=Qgis.Critical)
+        Debug.end("ConstraintWidget::onChangeThreshold")
 
-        ok = self.suricates.saveConstraint(self.currentProject, current, False)
-        if not ok:
-            self.suricates.iface.messageBar().pushMessage("Faillure!", "save constraint:", level=Qgis.Critical)
-            Debug.end("ConstraintWidget::onChangeThreshold (Error 4)")
+    ## @brief Launch computation when the user clicks Compute.
+    def onCompute(self):
+        from .suricates_algo import SuricatesAlgo
+        Debug.begin("ConstraintWidget::onCompute")
+
+        project = self.suricates.getProject(self.currentProject)
+        if project is None:
+            Debug.end("ConstraintWidget::onCompute (Error 1)")
             return
 
-        Debug.end("ConstraintWidget::onChangeThreshold")
-        return
+        configLayer = self.suricates.getConfig(project)
+        if configLayer is None:
+            Debug.end("ConstraintWidget::onCompute (Error 2)")
+            return
+
+        constraintsList = self.suricates.getConstraintsFromConfig(project, configLayer)
+        inputList = []
+        # Map absolute path -> item widget BEFORE renaming constraint.name
+        path_to_widget = {}
+        for constraint in constraintsList:
+            layer = self.suricates.getLayer(project, constraint.name)
+            if layer is not None and layer.layer() is not None:
+                # Find the item widget by display name before overwriting it
+                w = self._findItemWidget(constraint.name)
+                constraint.name = layer.layer().source()
+                if w is not None:
+                    path_to_widget[constraint.name] = w
+                    Debug.warning('path_to_widget: ' + constraint.name + ' -> widget OK')
+                else:
+                    Debug.warning('path_to_widget: ' + constraint.name + ' -> NO WIDGET')
+                inputList.append(constraint)
+
+        a = SuricatesAlgo(inputList, self.currentProject, self.suricates)
+        a.deleteTmp = (
+            QMessageBox.question(
+                None,
+                "Delete temporary files?",
+                "Do you want to delete temporary files?"
+            ) == QMessageBox.StandardButton.Yes
+        )
+
+        # Switch all item widgets to progress page
+        self._setAllProgress(0)
+
+        # Poll constraint.progress every second via a QTimer.
+        from qgis.PyQt.QtCore import QTimer as _QTimer
+        _poll = _QTimer(self)
+        _poll.setInterval(1000)
+
+        def _pollProgress():
+            Debug.warning('_pollProgress: ' + str(len(a.constraints)) + ' constraints, ' + str(len(path_to_widget)) + ' widgets')
+            for constraint in a.constraints:
+                Debug.warning('  constraint: ' + str(constraint.name) + ' progress=' + str(constraint.progress))
+                w = path_to_widget.get(constraint.name)
+                Debug.warning('  widget found: ' + str(w is not None))
+                if w is not None:
+                    w.setProgress(constraint.progress)
+
+        def _onAlgoFinished():
+            _poll.stop()
+            self._setAllInfo()
+            self.updateProject()
+
+        _poll.timeout.connect(_pollProgress)
+        a.taskCompleted.connect(_onAlgoFinished)
+        a.taskTerminated.connect(_onAlgoFinished)
+        _poll.start()
+
+        self.suricates.tasks.append(a)
+        QgsApplication.taskManager().addTask(a)
+        Debug.end("ConstraintWidget::onCompute")

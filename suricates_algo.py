@@ -94,6 +94,15 @@ class SuricatesAlgo(QgsTask):
         Debug.begin("SuricatesAlgo::__init__")
         super().__init__(projectName, QgsTask.CanCancel)
         self.constraints = constraints
+        ## @var _current_constraint
+        # The constraint currently being processed (used for progress tracking).
+        self._current_constraint = None
+        ## @var _constraint_start_counter
+        # Value of self.counter when processing of current constraint started.
+        self._constraint_start_counter = 0
+        ## @var _constraint_total_steps
+        # Total steps estimated for the current constraint.
+        self._constraint_total_steps = 1
         self.createdFiles = list()
         self.suricatesInstance = suricatesInstance
         self.projectName = projectName
@@ -214,6 +223,11 @@ class SuricatesAlgo(QgsTask):
     def getNewFileName(self, extension):
         self.counter = self.counter + 1
         self.setProgress(100.0 * float(self.counter) / (self.maxprogress + 1))
+        # Update per-constraint progress
+        if self._current_constraint is not None and self._constraint_total_steps > 0:
+            steps_done = self.counter - self._constraint_start_counter
+            pct = int(100.0 * steps_done / self._constraint_total_steps)
+            self._current_constraint.progress = min(99, pct)
         # QUuid.toString() produces {xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx} with curly braces.
         # GDAL on Windows does not support curly braces in file paths and silently fails
         # to create or open the file. Strip the braces with [1:-1].
@@ -871,6 +885,18 @@ class SuricatesAlgo(QgsTask):
                 Debug.print("- Skip")
                 continue
 
+            # Track progress for this constraint
+            self._current_constraint = constraint
+            self._constraint_start_counter = self.counter
+            # Estimate steps: rasterize(+buffer) + invert + inside + outside + merge
+            steps = (2 if constraint.buffer > 0 else 1) + 1  # rasterize + invert
+            steps += self.calculateConstraintSteps(constraint.typeIn)
+            steps += self.calculateConstraintSteps(constraint.typeOut)
+            if constraint.typeIn != ConstraintType.Sanctuarized and constraint.typeOut != ConstraintType.Sanctuarized:
+                steps += 1
+            self._constraint_total_steps = max(1, steps)
+            constraint.progress = 0
+
             rasterLayer = self.rasterizeWithBuffer(constraint.name, None, constraint.buffer, False)
             rasterLayer_1 = self.invert(rasterLayer, None)
 
@@ -908,6 +934,10 @@ class SuricatesAlgo(QgsTask):
             bn = QFileInfo(constraint.name).baseName()
             self.outputs[bn] = outputlayer
             layers.append(outputlayer)
+
+            # Constraint complete
+            constraint.progress = 100
+            self._current_constraint = None
 
             # Re-add protected files so deleteTmpFile() can clean them up
             self.createdFiles.extend(protected)
