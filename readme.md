@@ -8,7 +8,7 @@ This application is based on the theoretical model and treatment design of [*Eri
 
 This application was commissioned by the *Université de Lille* (France), *UFR de Géographie et Aménagement*, and funded by ERDF Interreg NWE (SURICATES Project 2017–2023).
 
-This application was initially developed by [Vincent Majorczyk](https://www.linkedin.com/in/vincentmajorczyk/) ([*CDI-Technologies*](https://www.linkedin.com/company/cdi-technologies), 2020).
+This application was developed by [Vincent Majorczyk](https://www.linkedin.com/in/vincentmajorczyk/) (CDI-Technologies 2020-2024, Ixsane 2026).
 
 This application is released under the open source licence [GNU General Public License v3](gpl-3.0.md).
 
