@@ -63,16 +63,16 @@ When the application starts, a group **Projects** is created at the root of the 
 
 A *RAIES* project is a named collection of constraint choices used to generate a raster indicating the best locations according to those constraints.
 
-The RAIES panel is divided into three parts: project management, constraint list management, and individual constraint configuration.
+The RAIES panel has two areas: **project management** (top) and the **constraint list** (below), where each constraint is configured inline and the final raster is computed.
 
 The project management area contains:
 
-- a combobox listing available projects;
-- a button to delete the selected project;
-- a text field to enter a new project name;
-- a button to create a new project (disabled if the name already exists).
+- a combobox (**Selection**) listing available projects;
+- a button (**✕**) to delete the selected project;
+- a text field (**New**) to enter a new project name;
+- a button (**+**) to create a new project (disabled if the name already exists).
 
-![User interface: management of projects](assets/UserManuel_Project.png)
+![User interface: project management](assets/project_ui.svg)
 
 Each project appears as a subgroup of the **Projects** group in the layer panel. The subgroup contains a layer named *project_config* which stores constraint information. This is reflected in the constraint list displayed in the RAIES panel.
 
@@ -80,31 +80,47 @@ Each project appears as a subgroup of the **Projects** group in the layer panel.
 
 ### 4.4) Configure a project
 
-The second part of the RAIES panel allows adding, removing, and selecting constraints.
+The second area of the RAIES panel is the **constraint list**: it lets you add, configure, and remove constraint layers, and it drives the computation.
 
-The first layer to add is the **map layer**: the polygon defining the overall study area within which computation will be performed. It appears in the list with constraint type *Map* and allows configuration of a buffer around the zone.
+**Adding a layer.** Select a layer in the QGIS layer panel, then click the **+** button at the bottom of the list. If no features are selected, the whole layer is copied into the project group; if features are selected (spatial selection, attribute filter, etc.), only those are copied. The **first** layer added becomes the **Map** (working area).
 
-A layer is added by selecting it in the layer panel, then clicking **Add**. If no features are selected, the entire layer is copied into the project group. If features are selected (by spatial selection, attribute filter, etc.), only those features are copied.
+![User interface: the constraint list](assets/layer_list_ui.svg)
 
-![User interface: list of constrained layers](assets/UserManual_ListOfConstraints.png)
+The list is made of:
 
-Subsequent layers are configured with the following parameters:
+- the **Map item** at the top — the working-area mask;
+- one **item per constraint layer**;
+- the **item currently being configured**, expanded inline;
+- the **+ add** button at the bottom.
 
-- a **buffer distance** around the geometry of the input layer's features;
-- an **inside constraint type**: applied within the geometry (and its buffer);
-- an **outside constraint type**: applied outside the geometry;
-- a **priority weight** applied to the output raster relative to other constraints.
+**The Map item** shows its icon and label, the layer name, and a **change-layer** button (folder icon) that swaps the working area for the currently selected QGIS layer. The Map is required, so it has **no delete button**.
 
-Click **Save** to save the current constraint's parameters.
+![User interface: the Map item](assets/map_item_ui.svg)
 
-![User interface: constraints configuration](assets/UserManual_ConstraintConfiguration.png)
+**A constraint item** (collapsed) shows its **constraint icon** (the inside/outside glyph), the **layer name**, the **inside/outside types**, and its **properties** — buffer distance and weight.
 
-There are five constraint types:
+![User interface: a constraint item](assets/normal_item_ui.svg)
 
-- **Attractive** and **Repulsive**: a distance gradient is computed from the geometry boundary. For *Attractive*, cells near the boundary have value 0 (black) and far cells have value 1 (white). For *Repulsive*, near cells are 1 and far cells are 0.
-- **Included**: all cells in the considered zone receive value 0.
-- **Excluded**: all cells in the considered zone receive value 1 (the priority weight).
-- **Sanctuarized**: all cells in the considered zone are excluded from the final raster (No-Data).
+**Configuring a constraint.** Click an item to expand its configuration inline. You can then set:
+
+- the **inside** and **outside constraint types** — two rows of buttons; the selected type in each row is outlined in blue;
+- the **buffer distance** around the layer's features;
+- the **layer weight**, i.e. this constraint's importance relative to the others;
+
+and remove the constraint with the **🗑 (trash)** button. Changes are **saved automatically** — there is no *Save* button. Clicking elsewhere (another item or the list background) collapses the configuration back to the summary view.
+
+![User interface: configuring a constraint](assets/configuration_item_ui.svg)
+
+Each type is applied independently to the **inside** (within the geometry and its buffer) and the **outside** of every layer. The available types are:
+
+- **Attractive** and **Repulsive**: a distance gradient is computed from the geometry boundary. For *Attractive*, cells near the boundary are favourable (value 0, black) and far cells are unfavourable (value 1, white); *Repulsive* is the opposite.
+- **Included**: all cells in the zone receive value 0 (fully favourable).
+- **Excluded**: all cells in the zone receive value 1, scaled by the priority weight (unfavourable).
+- **Forbidden**: all cells in the zone are excluded from the final raster (No-Data). Forbidden has priority over every other type, **including Mandatory**.
+- **Mandatory**: all cells in the zone are forced to 0 in the final raster (**always retained**), overriding the other constraints — except Forbidden, which still wins.
+- **Undefined** (shown as “?”): a zone not configured yet. It stays neutral, taking the **middle** value (half-way between Included and Excluded), so it neither favours nor penalises the location.
+
+> Internally, *Forbidden* is stored as the legacy *Sanctuarized* type; only the display label changed.
 
 ![The constraints](assets/constraints.svg)
 
@@ -112,11 +128,25 @@ There are five constraint types:
 
 Saving the QGIS project before computing is strongly recommended to avoid data loss if the application crashes.
 
-To run the computation: set a threshold value and click **Compute**. Progress is shown in the QGIS status bar.
+The bottom of the panel holds the computation settings and the **Compute** button:
 
-For each constraint layer, the application produces a raster weighted by the priority value. All weighted rasters are then cumulated and normalised to the range [0, 1]. Finally, the cumulated raster is thresholded: cells with a value **below** the threshold are retained (favourable locations), and cells above the threshold are set to No-Data.
+- the **Final Accepted Constraint (FAC) threshold**: cells whose cumulated value is below it are retained;
+- the **rasterisation resolution** (10, 100 or 1000 m per pixel): the pixel size of every raster produced. The estimated pixel count is shown just below, with a warning above ~4 million pixels (computation becomes slow).
 
-The weighted rasters, the cumulated raster, and the thresholded raster are added to the project subgroup. At the end of computation, a dialog asks whether to delete the intermediate temporary rasters from the *tmp/* folder.
+![User interface: computation settings and Compute button](assets/footer_ui.svg)
+
+Click **Compute** to run. Progress is shown on each constraint item — a progress bar per layer — and in the QGIS status bar.
+
+![User interface: per-layer progress during computation](assets/progress_ui.png)
+
+The pipeline is:
+
+1. for each constraint layer, a raster weighted by the priority value is produced;
+2. all weighted rasters are cumulated and normalised to the range [0, 1];
+3. **Mandatory** zones are applied by multiplication: the aggregate is multiplied by a 0/1 mask (0 inside the Mandatory zones), forcing those cells to 0 (*always retained*). Because No-Data dominates a multiplication, a **Forbidden** zone (No-Data) always wins over a Mandatory one;
+4. the result is thresholded: cells **below** the FAC threshold are retained (favourable locations), the rest become No-Data.
+
+The weighted rasters, the Mandatory zones (`mandatory-…`), the cumulated `raster`, and the `threshold` raster are added to the project subgroup. At the end of computation, a dialog asks whether to delete the intermediate temporary rasters from the *tmp/* folder.
 
 ### 4.6) Note on layer panel manipulation
 
@@ -130,34 +160,48 @@ Direct manipulation of the layer panel is not the intended way to manage project
 
 ### 5.1) General
 
-The project contains the following classes:
+`SuricatesPlugin` is the QGIS entry point (it adds the toolbar action). At startup, `mainProgram()` closes any existing instance and creates a new one.
 
-- `SuricatesInstance`: manages application state and data access (files, layers, layer tree);
-- `SuricatesAlgo`: a `QgsTask` subclass that runs the raster computation; contains all processing algorithms;
-- `Debug`: logging and debugging utilities;
-- UI classes:
-  - `HeaderWidget`: project management (creation, deletion, selection);
-  - `ConstraintWidget`: constraint configuration for the selected project;
-  - `SuricatesWidget`: container for `HeaderWidget` and `ConstraintWidget`;
-  - `SuricatesDock`: dockable panel containing `SuricatesWidget`;
-
-Two data structures are used:
-
-- `ConstraintItem`: holds all parameters for a single constraint (layer path, inside/outside types, buffer, priority);
-- `ConstraintType`: enumeration of the five constraint categories.
-
-The function `mainProgram()` is called at startup: it closes any existing instance and creates a new one.
+The complete class map — application logic, the constraint model, helpers, and the user-interface widgets — is given in **§5.2** (with the diagram). The responsibilities of `SuricatesInstance` (state, files, layer tree) and `SuricatesAlgo` (the `QgsTask` raster computation) are detailed in **§5.3**.
 
 ### 5.2) User interface
 
-The UI classes are nested as follows:
+The screenshot below maps each Qt widget class onto the panel region it draws:
 
-- `SuricatesDock` contains `SuricatesWidget`;
-- `SuricatesWidget` contains `HeaderWidget` and `ConstraintWidget`.
+![Widget classes mapped onto the panel](assets/widget_dev.svg)
 
-![User interface class nesting](assets/GuiStructure.png)
+Containment tree:
 
-`HeaderWidget` manages projects; `ConstraintWidget` manages constraints of the selected project. `SuricatesWidget` and `SuricatesDock` are simple containers.
+```
+SuricatesDock (QDockWidget)
+└─ SuricatesWidget
+   ├─ HeaderWidget ................ project selection / creation / deletion
+   └─ ConstraintWidget
+      ├─ QListWidget
+      │   ├─ MapItemWidget ........ the Map (working-area) item
+      │   ├─ ConstraintItemWidget × N
+      │   │      └─ QStackedWidget : info | config | progress pages
+      │   └─ "+" add button
+      └─ footer (inline) ......... FAC threshold + resolution + Compute
+```
+
+**Widget classes**
+
+- `SuricatesDock` — dockable panel (`QDockWidget`), simple container;
+- `SuricatesWidget` — main container (splash screen, then `HeaderWidget` + `ConstraintWidget`);
+- `HeaderWidget` — project management (select, create, delete);
+- `ConstraintWidget` — the constraint list **and** the computation footer (FAC threshold, resolution, Compute);
+- `MapItemWidget` — the Map (working-area) list item;
+- `ConstraintItemWidget` — one constraint list item; its inner `QStackedWidget` switches between the **info**, **config** and **progress** pages.
+
+**Non-widget classes** (model, logic, helpers)
+
+- `ConstraintItem` / `ConstraintType` — constraint data model and type enumeration;
+- `ConstraintIconFactory` — programmatic generation of the type icons;
+- `SuricatesInstance` — application state, files and layer-tree management;
+- `SuricatesAlgo` — the raster computation (`QgsTask`);
+- `SuricatesPlugin` — QGIS plugin entry point;
+- `Debug` — logging helpers.
 
 ### 5.3) Other classes
 
