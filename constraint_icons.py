@@ -265,7 +265,14 @@ class ConstraintIconFactory:
 
     def _draw_letter(self, painter: QPainter, ctype: ConstraintType, top_right: bool):
         """Draw the type initial letter in the ZONE_COLOR area."""
-        letter = '?' if ctype == ConstraintType.Undefined else ctype.name[0].upper()
+        # Display letter: Undefined -> "?", Sanctuarized -> "F" (its UI label is "Forbidden"),
+        # every other type uses its initial.
+        if ctype == ConstraintType.Undefined:
+            letter = '?'
+        elif ctype == ConstraintType.Sanctuarized:
+            letter = 'F'
+        else:
+            letter = ctype.name[0].upper()
         font = QFont("monospace")
         font.setBold(True)
         font.setPixelSize(self.LETTER_FONT_SIZE)
