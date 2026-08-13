@@ -1,3 +1,11 @@
+# Version for QGIS 3.44.13
+
+Migration from QGIS 3.40.9 to 3.44.13, August 2026.
+
+Same Qt5 base as 3.40 — **no breaking API change was required**: the plugin loads and computes unchanged on 3.44. Migration was limited to compatibility checking (not yet exhaustively tested on every workflow).
+
+---
+
 # Version for QGIS 3.40.9
 
 Migration from QGIS 3.10.9 to 3.40.9 (LTR "Bratislava"), May 2026.

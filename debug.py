@@ -47,7 +47,7 @@ from qgis.PyQt.QtWidgets import *
 # ```
 class Debug():
     ## @brief display debug text is true
-    enabled = True
+    enabled = False
 
     ## @brief indentation variable
     __indentDebug = 0

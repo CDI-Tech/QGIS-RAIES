@@ -2,7 +2,7 @@
 
 ## 1) Application
 
-This application is a plugin for the software [QGIS](https://qgis.org/). It is compatible with version *3.40.9* (Long Term Release "Bratislava").
+This application is a plugin for the software [QGIS](https://qgis.org/). It is validated for QGIS *3.44.13* and requires QGIS *3.40* or later (see §5.5).
 
 This application is based on the theoretical model and treatment design of [*Eric Masson*](https://pro.univ-lille.fr/eric-masson/), Associate Professor at the *Université de Lille*.
 
@@ -222,6 +222,12 @@ The source code uses [Doxygen](https://www.doxygen.nl/download.html) documentati
 3. Load the Doxygen project file: `doc/Doxyfile`;
 4. On the *Run* tab, click **Run doxygen**;
 5. Click **Show HTML output**, or open `doc/html/index.html` in a browser.
+
+### 5.5) Versioning and releases
+
+Releases are tagged after the **QGIS version they are validated against**, so the compatible QGIS version is visible at a glance: `qgis-3.44`, `qgis-3.40`, … If several plugin releases target the *same* QGIS version, a **numeric suffix** is appended: `qgis-3.40`, then `qgis-3.40-2`, `qgis-3.40-3`, …
+
+The exact QGIS compatibility range is also declared in `metadata.txt` (`qgisMinimumVersion` / `qgisMaximumVersion`), which the QGIS plugin manager uses to filter installable versions. Each QGIS migration — the APIs that had to change — is documented in [`version.md`](version.md).
 
 ---
 
