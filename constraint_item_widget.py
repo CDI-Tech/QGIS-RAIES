@@ -23,6 +23,7 @@ _CONFIG_TYPES = [
     ConstraintType.Included,
     ConstraintType.Excluded,
     ConstraintType.Sanctuarized,
+    ConstraintType.Mandatory,
     ConstraintType.Undefined,
 ]
 
@@ -31,8 +32,23 @@ _TYPE_TOOLTIP = {
     ConstraintType.Attractive:   "Attractive — gradient, near = preferred",
     ConstraintType.Included:     "Included — zone value = 0 (best)",
     ConstraintType.Excluded:     "Excluded — zone value = priority (high)",
-    ConstraintType.Sanctuarized: "Sanctuarized — zone excluded (No-Data)",
+    ConstraintType.Sanctuarized: "Forbidden — zone excluded (No-Data)",
+    ConstraintType.Mandatory:    "Mandatory — zone forced to 0 (always kept)",
     ConstraintType.Undefined:    "Undefined — not yet configured",
+}
+
+## @brief User-facing label for each type (shown in the info line).
+# Kept separate from the enum name so the stored/serialized name (e.g. "Sanctuarized")
+# stays stable while the UI can display a friendlier label (e.g. "Forbidden").
+_TYPE_LABEL = {
+    ConstraintType.Repulsive:    "Repulsive",
+    ConstraintType.Attractive:   "Attractive",
+    ConstraintType.Included:     "Included",
+    ConstraintType.Excluded:     "Excluded",
+    ConstraintType.Sanctuarized: "Forbidden",
+    ConstraintType.Mandatory:    "Mandatory",
+    ConstraintType.Map:          "Map",
+    ConstraintType.Undefined:    "Undefined",
 }
 
 ## @brief Size of the left icon button in pixels.
@@ -121,6 +137,9 @@ class ConstraintItemWidget(QWidget):
     ## @brief Emitted when the widget needs a different height (page switch).
     sizeChanged = pyqtSignal()
 
+    ## @brief Emitted when this widget expands to config page.
+    expanded = pyqtSignal()
+
     # -----------------------------------------------------------------------
     # Construction
     # -----------------------------------------------------------------------
@@ -140,14 +159,6 @@ class ConstraintItemWidget(QWidget):
         self._save_timer = QTimer(self)
         self._save_timer.setSingleShot(True)
         self._save_timer.timeout.connect(self._doSave)
-
-        ## @var _leave_timer
-        # Delays the info←config transition to avoid false triggers when focus
-        # moves between child widgets inside the config page.
-        self._leave_timer = QTimer(self)
-        self._leave_timer.setSingleShot(True)
-        self._leave_timer.setInterval(400)
-        self._leave_timer.timeout.connect(self._collapseToInfo)
 
         self._buildUi()
         self._refreshInfoPage()
@@ -310,7 +321,7 @@ class ConstraintItemWidget(QWidget):
 
     def _buildConfigPage(self) -> QWidget:
         page = QWidget()
-        page.installEventFilter(self)   # detect mouse leaving the config page
+        page.mousePressEvent = lambda e: self.collapseToInfo()
         layout = QVBoxLayout(page)
         layout.setContentsMargins(0, 2, 0, 2)
         layout.setSpacing(4)
@@ -428,9 +439,9 @@ class ConstraintItemWidget(QWidget):
         # Line 1: layer name
         self._lbl_name.setText(c.name)
         self._lbl_progress_name.setText(c.name)
-        # Line 2: inside / outside types
-        tin  = c.typeIn.name  if c.typeIn  else "—"
-        tout = c.typeOut.name if c.typeOut else "—"
+        # Line 2: inside / outside types (friendly labels, not enum names)
+        tin  = _TYPE_LABEL.get(c.typeIn,  "—") if c.typeIn  else "—"
+        tout = _TYPE_LABEL.get(c.typeOut, "—") if c.typeOut else "—"
         self._lbl_inout.setText(f"In: {tin}   Out: {tout}")
         # Line 3: distance and weight
         weight = int(c.priority) // 10 if c.priority >= 10 else int(c.priority)
@@ -473,14 +484,9 @@ class ConstraintItemWidget(QWidget):
             self._left_stack.setCurrentIndex(1)
             self.updateGeometry()
             self.sizeChanged.emit()
+            self.expanded.emit()
         else:
-            self._collapseToInfo()
-
-    def _collapseToInfo(self):
-        """Save and switch back to the info page."""
-        if self._stack.currentIndex() == 1:
-            self._doSave()
-            self._stack.setCurrentIndex(0)
+            self.collapseToInfo()
 
     def _makeTypeHandler(self, ctype: ConstraintType, is_inside: bool, buttons: list):
         """Return a slot that sets the type, un-checks siblings, and saves."""
@@ -518,39 +524,10 @@ class ConstraintItemWidget(QWidget):
         self._refreshInfoPage()
         self.changed.emit(self._constraint)
 
-    # -----------------------------------------------------------------------
-    # Mouse leave detection (config page → info page)
-    # -----------------------------------------------------------------------
-
-    def _isMouseOverSelf(self) -> bool:
-        # Geometry check first: is cursor inside our screen rect?
-        from qgis.PyQt.QtWidgets import QApplication
-        from qgis.PyQt.QtGui import QCursor
-        top_left = self.mapToGlobal(self.rect().topLeft())
-        global_rect = self.rect().translated(top_left)
-        if not global_rect.contains(QCursor.pos()):
-            return False
-        # Secondary: widgetAt check
-        w = QApplication.widgetAt(QCursor.pos())
-        while w is not None:
-            if w is self:
-                return True
-            w = w.parent()
-        return False
-
-    def _collapseToInfo(self):
-        # Save and switch to info page only if mouse has truly left.
-        if self._stack.currentIndex() == 1 and not self._isMouseOverSelf():
+    def collapseToInfo(self):
+        if self._stack.currentIndex() == 1:
             self._doSave()
             self._stack.setCurrentIndex(0)
             self._left_stack.setCurrentIndex(0)
             self.updateGeometry()
             self.sizeChanged.emit()
-
-    def eventFilter(self, obj, event):
-        from qgis.PyQt.QtCore import QEvent
-        if event.type() == QEvent.Leave and self._stack.currentIndex() == 1:
-            self._leave_timer.start()
-        elif event.type() == QEvent.Enter and self._stack.currentIndex() == 1:
-            self._leave_timer.stop()
-        return super().eventFilter(obj, event)

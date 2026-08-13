@@ -10,12 +10,13 @@ from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtCore import Qt, QSize
 from qgis.PyQt.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QFormLayout,
-    QListWidget, QListWidgetItem, QSpinBox, QPushButton, QMessageBox
+    QListWidget, QListWidgetItem, QSpinBox, QPushButton, QMessageBox, QLabel
 )
 
 from .debug import Debug
 from .constraint_item import ConstraintType, ConstraintItem
 from .constraint_item_widget import ConstraintItemWidget, ICON_SIZE
+from .map_item_widget import MapItemWidget, _MAP_ICON_SIZE
 
 
 
@@ -63,14 +64,41 @@ class ConstraintWidget(QWidget):
         self.w_listConstraints.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         layout.addWidget(self.w_listConstraints, 1)
 
-        # -- Threshold + Compute ---------------------------------------------
+        # -- Threshold + Resolution + Compute --------------------------------
         bottom = QFormLayout()
+
         self.w_threshold = QSpinBox()
         self.w_threshold.setMinimum(0)
         self.w_threshold.setMaximum(100)
         self.w_threshold.setSingleStep(10)
         self.w_threshold.setSuffix(" %")
         bottom.addRow("Final Accepted Constraint (FAC)", self.w_threshold)
+
+        # Resolution buttons + pixel count, stacked vertically on the right side
+        res_container = QWidget()
+        res_vbox = QVBoxLayout(res_container)
+        res_vbox.setContentsMargins(0, 0, 0, 0)
+        res_vbox.setSpacing(2)
+
+        res_btns_row = QHBoxLayout()
+        res_btns_row.setSpacing(4)
+        self._res_btns = {}
+        for val in (10, 100, 1000):
+            btn = QPushButton(f"{val} m")
+            btn.setCheckable(True)
+            btn.setFixedWidth(64)
+            btn.clicked.connect(lambda checked, v=val: self._onResolutionChanged(v))
+            self._res_btns[val] = btn
+            res_btns_row.addWidget(btn)
+        res_btns_row.addStretch()
+        res_vbox.addLayout(res_btns_row)
+
+        self._lbl_pixels = QLabel()
+        self._lbl_pixels.setStyleSheet("color: #888; font-size: 11px;")
+        res_vbox.addWidget(self._lbl_pixels)
+
+        bottom.addRow("Resolution:", res_container)
+
         layout.addLayout(bottom)
 
         self.w_compute = QPushButton("Compute")
@@ -121,13 +149,19 @@ class ConstraintWidget(QWidget):
 
         constraintsList = self.suricates.getConstraintsFromConfig(project, configLayer)
 
+        # Map widget first, then regular constraints
         for constraint in constraintsList:
             if constraint.typeIn == ConstraintType.Map:
                 self.w_threshold.blockSignals(True)
                 self.w_threshold.setValue(int(constraint.priority))
                 self.w_threshold.blockSignals(False)
+                self._addMapItemWidget(constraint)
             else:
                 self._addItemWidget(constraint)
+
+        # Resolution buttons
+        resolution = self.suricates.getResolution(self.currentProject)
+        self._setResolutionButtons(resolution)
 
         # "+" button at the bottom of the list
         self._addPlusButton()
@@ -143,6 +177,7 @@ class ConstraintWidget(QWidget):
         item_widget = ConstraintItemWidget(constraint, self)
         item_widget.changed.connect(self._onConstraintChanged)
         item_widget.deleted.connect(self.onDeleteConstraint)
+        item_widget.expanded.connect(lambda iw=item_widget: self._onItemExpanded(iw))
 
         list_item = QListWidgetItem(self.w_listConstraints)
         list_item.setSizeHint(QSize(self.w_listConstraints.width(), ICON_SIZE + 12))
@@ -154,6 +189,16 @@ class ConstraintWidget(QWidget):
             li.setSizeHint(QSize(self.w_listConstraints.width(),
                                 iw.sizeHint().height()))
         item_widget.sizeChanged.connect(_onSizeChanged)
+
+    def _addMapItemWidget(self, constraint: ConstraintItem):
+        """Insert the MapItemWidget as the first item in the list."""
+        item_widget = MapItemWidget(constraint, self)
+        item_widget.replaced.connect(self.onReplaceMap)
+
+        list_item = QListWidgetItem()
+        list_item.setSizeHint(QSize(self.w_listConstraints.width(), _MAP_ICON_SIZE + 12))
+        self.w_listConstraints.insertItem(0, list_item)
+        self.w_listConstraints.setItemWidget(list_item, item_widget)
 
     def _addPlusButton(self):
         """Append the '+' add-layer button as the last list item."""
@@ -172,6 +217,12 @@ class ConstraintWidget(QWidget):
         list_item.setSizeHint(QSize(self.w_listConstraints.width(), 40))
         self.w_listConstraints.addItem(list_item)
         self.w_listConstraints.setItemWidget(list_item, btn)
+
+    def _onItemExpanded(self, expanded_widget):
+        """Collapse all items except the one that just expanded."""
+        for w in self._iterItemWidgets():
+            if w is not expanded_widget:
+                w.collapseToInfo()
 
     def _iterItemWidgets(self):
         """Yield every ConstraintItemWidget currently in the list."""
@@ -200,6 +251,88 @@ class ConstraintWidget(QWidget):
     # -----------------------------------------------------------------------
     # Slots
     # -----------------------------------------------------------------------
+
+    def _saveProject(self):
+        """Save the QGIS project file. Warns if the project has no file yet."""
+        from qgis.core import QgsProject
+        if not QgsProject.instance().fileName():
+            self.suricates.iface.messageBar().pushMessage(
+                "Warning",
+                "Save the QGIS project first (Ctrl+S) to persist layer references.",
+                level=Qgis.Warning, duration=5)
+            return
+        QgsProject.instance().write()
+
+    def _setResolutionButtons(self, resolution: int):
+        """Check the button matching *resolution*, uncheck the others."""
+        for val, btn in self._res_btns.items():
+            btn.setChecked(val == resolution)
+        self._updatePixelLabel(resolution)
+
+    def _estimatePixelCount(self, resolution: int):
+        """Return (pixels: int, reason: str).  pixels=0 means unknown/error."""
+        if self.currentProject is None:
+            return 0, "no project"
+        project = self.suricates.getProject(self.currentProject)
+        if project is None:
+            return 0, "project not found"
+        configLayer = self.suricates.getConfig(project)
+        if configLayer is None:
+            return 0, "no config"
+        constraintsList = self.suricates.getConstraintsFromConfig(project, configLayer)
+        map_c = next((c for c in constraintsList if c.typeIn == ConstraintType.Map), None)
+        if map_c is None:
+            return 0, "no Map layer"
+        node = self.suricates.getLayer(project, map_c.name)
+        if node is None or node.layer() is None:
+            return 0, f"layer '{map_c.name}' missing from tree"
+        ext = node.layer().extent()
+        Debug.warning(f"_estimatePixelCount: layer={map_c.name} crs={node.layer().crs().authid()} w={ext.width():.1f} h={ext.height():.1f}")
+        if ext.isEmpty() or ext.width() == 0 or ext.height() == 0:
+            return 0, "empty extent"
+        pixels = int((ext.width() / resolution) * (ext.height() / resolution))
+        if pixels == 0:
+            return 0, f"extent too small for {resolution}m resolution (CRS in degrees?)"
+        return pixels, ""
+
+    def _updatePixelLabel(self, resolution: int):
+        """Update the pixel-count label and warn if > 4 M pixels."""
+        pixels, reason = self._estimatePixelCount(resolution)
+        if pixels <= 0:
+            self._lbl_pixels.setText(f"— {reason}" if reason else "—")
+            self._lbl_pixels.setStyleSheet("color: #aaa; font-size: 11px;")
+            Debug.warning(f"_updatePixelLabel: pixels=0 reason={reason}")
+            return
+        if pixels < 1_000:
+            text = f"~{pixels} px"
+        elif pixels < 1_000_000:
+            text = f"~{pixels / 1_000:.1f} kpx"
+        else:
+            text = f"~{pixels / 1_000_000:.2f} Mpx"
+        if pixels > 4_000_000:
+            self._lbl_pixels.setText(f"⚠ {text} (slow!)")
+            self._lbl_pixels.setStyleSheet("color: #c44; font-size: 11px; font-weight: bold;")
+        else:
+            self._lbl_pixels.setText(text)
+            self._lbl_pixels.setStyleSheet("color: #888; font-size: 11px;")
+
+    def _onResolutionChanged(self, value: int):
+        Debug.begin("ConstraintWidget::_onResolutionChanged")
+        self._setResolutionButtons(value)
+        self.suricates.setResolution(self.currentProject, value)
+        Debug.end("ConstraintWidget::_onResolutionChanged")
+
+    ## @brief Replace the Map layer with the currently active QGIS layer.
+    def onReplaceMap(self):
+        Debug.begin("ConstraintWidget::onReplaceMap")
+        if not self.suricates.replaceMapLayer(self.currentProject):
+            self.suricates.iface.messageBar().pushMessage(
+                "Failure!", "replace Map layer", level=Qgis.Critical)
+            Debug.end("ConstraintWidget::onReplaceMap (failure)")
+            return
+        self.updateProject()
+        self._saveProject()
+        Debug.end("ConstraintWidget::onReplaceMap (success)")
 
     ## @brief Auto-save handler: called when a ConstraintItemWidget emits changed().
     def _onConstraintChanged(self, constraint: ConstraintItem):
@@ -244,13 +377,21 @@ class ConstraintWidget(QWidget):
             Debug.end("ConstraintWidget::onAddNewConstraint (failure)")
             return
 
-        # Remove the '+' button, add the new item, then re-add the '+' button
-        # (it is always the last item)
-        last = self.w_listConstraints.count() - 1
-        self.w_listConstraints.takeItem(last)
-        self._addItemWidget(constraint)
-        self._addPlusButton()
+        if not haveMap:
+            # First layer is the Map — write default resolution into its config row
+            self.suricates.setResolution(self.currentProject, 100)
 
+        if not haveMap:
+            # Map widget inserted at position 0 — full refresh is simpler
+            self.updateProject()
+        else:
+            # Regular constraint: append before the '+' button
+            last = self.w_listConstraints.count() - 1
+            self.w_listConstraints.takeItem(last)
+            self._addItemWidget(constraint)
+            self._addPlusButton()
+
+        self._saveProject()
         self.suricates.iface.messageBar().pushMessage(
             "Success!", "create new constraint", level=Qgis.Success, duration=3)
         Debug.end("ConstraintWidget::onAddNewConstraint (success)")
@@ -261,6 +402,7 @@ class ConstraintWidget(QWidget):
         Debug.begin("ConstraintWidget::onDeleteConstraint")
         self.suricates.deleteConstraint(self.currentProject, name)
         self.updateProject()
+        self._saveProject()
         Debug.end("ConstraintWidget::onDeleteConstraint")
 
     ## @brief Save the threshold value when the spinbox changes.
@@ -320,7 +462,8 @@ class ConstraintWidget(QWidget):
                     Debug.warning('path_to_widget: ' + constraint.name + ' -> NO WIDGET')
                 inputList.append(constraint)
 
-        a = SuricatesAlgo(inputList, self.currentProject, self.suricates)
+        resolution = self.suricates.getResolution(self.currentProject)
+        a = SuricatesAlgo(inputList, self.currentProject, self.suricates, resolution)
         a.deleteTmp = (
             QMessageBox.question(
                 None,
@@ -344,7 +487,12 @@ class ConstraintWidget(QWidget):
                 w = path_to_widget.get(constraint.name)
                 Debug.warning('  widget found: ' + str(w is not None))
                 if w is not None:
-                    w.setProgress(constraint.progress)
+                    try:
+                        w.setProgress(constraint.progress)
+                    except RuntimeError:
+                        # The widget (QProgressBar) was deleted mid-computation — e.g. the
+                        # user removed a layer. Harmless: skip this widget and keep polling.
+                        pass
 
         def _onAlgoFinished():
             _poll.stop()

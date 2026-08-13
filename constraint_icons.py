@@ -56,9 +56,13 @@ class ConstraintIconFactory:
     ## @brief Checkerboard cell size in pixels (at size=48).
     CHECKER_CELL = 6
 
-    ## @brief Checkerboard colours for Sanctuarized.
-    CHECKER_A = QColor(70, 130, 220)
-    CHECKER_B = QColor(100, 200, 220)
+    ## @brief Checkerboard colours for Sanctuarized (forbidden, red).
+    CHECKER_A = QColor(210, 90, 110)
+    CHECKER_B = QColor(245, 175, 185)
+
+    ## @brief Checkerboard colours for Mandatory (always-kept, green).
+    MANDATORY_CHECKER_A = QColor(70, 165, 90)
+    MANDATORY_CHECKER_B = QColor(180, 225, 190)
 
     ## @brief Font used for the type initial in config icons.
     LETTER_FONT_SIZE = 14  # points
@@ -173,7 +177,9 @@ class ConstraintIconFactory:
         if zone_color is not None:
             painter.fillRect(0, 0, self.size, self.size, zone_color)
         elif ctype == ConstraintType.Sanctuarized:
-            self._fill_checkerboard(painter)
+            self._fill_checkerboard(painter, self.CHECKER_A, self.CHECKER_B)
+        elif ctype == ConstraintType.Mandatory:
+            self._fill_checkerboard(painter, self.MANDATORY_CHECKER_A, self.MANDATORY_CHECKER_B)
         elif ctype == ConstraintType.Included:
             painter.fillRect(0, 0, self.size, self.size, QColor(30, 30, 30))
         elif ctype == ConstraintType.Excluded:
@@ -185,13 +191,16 @@ class ConstraintIconFactory:
 
         painter.restore()
 
-    def _fill_checkerboard(self, painter: QPainter):
-        """Tile the square with alternating CHECKER_A / CHECKER_B squares."""
+    def _fill_checkerboard(self, painter: QPainter, color_a: QColor = None, color_b: QColor = None):
+        """Tile the square with alternating color_a / color_b squares.
+        Defaults to the Sanctuarized (red) colours when none are given."""
+        if color_a is None: color_a = self.CHECKER_A
+        if color_b is None: color_b = self.CHECKER_B
         cell = self.CHECKER_CELL
         s = self.size
         for row in range(0, s, cell):
             for col in range(0, s, cell):
-                color = self.CHECKER_A if ((row // cell + col // cell) % 2 == 0) else self.CHECKER_B
+                color = color_a if ((row // cell + col // cell) % 2 == 0) else color_b
                 painter.fillRect(col, row, cell, cell, color)
 
     def _fill_gradient(self, painter: QPainter, inside: bool, repulsive: bool):
@@ -256,7 +265,7 @@ class ConstraintIconFactory:
 
     def _draw_letter(self, painter: QPainter, ctype: ConstraintType, top_right: bool):
         """Draw the type initial letter in the ZONE_COLOR area."""
-        letter = ctype.name[0].upper()
+        letter = '?' if ctype == ConstraintType.Undefined else ctype.name[0].upper()
         font = QFont("monospace")
         font.setBold(True)
         font.setPixelSize(self.LETTER_FONT_SIZE)

@@ -90,10 +90,11 @@ class SuricatesAlgo(QgsTask):
     # @param constraints list of constraints (ConstraintItem)
     # @param suricatesInstance current SuricatesInstance
     # @param projectName name of the task
-    def __init__(self, constraints, projectName, suricatesInstance):
+    def __init__(self, constraints, projectName, suricatesInstance, resolution=100):
         Debug.begin("SuricatesAlgo::__init__")
         super().__init__(projectName, QgsTask.CanCancel)
         self.constraints = constraints
+        self.resolution = resolution
         ## @var _current_constraint
         # The constraint currently being processed (used for progress tracking).
         self._current_constraint = None
@@ -271,7 +272,7 @@ class SuricatesAlgo(QgsTask):
                                                    'EXTENT': self.extent,
                                                    'EXTRA': '',
                                                    'FIELD': None,
-                                                   'HEIGHT': 100,
+                                                   'HEIGHT': self.resolution,
                                                    'INIT': None,
                                                    'INPUT': vectorName,
                                                    'INVERT': False,
@@ -279,7 +280,7 @@ class SuricatesAlgo(QgsTask):
                                                    'OPTIONS': '',
                                                    'OUTPUT': outputName,
                                                    'UNITS': 1,
-                                                   'WIDTH': 100})
+                                                   'WIDTH': self.resolution})
         print('rasterize ' + result['OUTPUT'])
         return result['OUTPUT']
 
@@ -765,11 +766,142 @@ class SuricatesAlgo(QgsTask):
 
         if constraintType == ConstraintType.Sanctuarized:
             return None  # nodata everywhere in this zone
+        if constraintType == ConstraintType.Mandatory:
+            # In the normal per-constraint raster, Mandatory behaves like Included (value 0
+            # = best): both In and Out zones are respected and the buffer is honoured, and
+            # it is clipped to the map like every other zone. The absolute 0 override is
+            # additionally enforced by applyMandatoryZones() after cumulation.
+            return self.calculateTheConstraintWithConstant(mask, rasterMap, None, 0)
         if constraintType == ConstraintType.Excluded:
             return self.calculateTheConstraintWithConstant(mask, rasterMap, None, priority)
         if constraintType == ConstraintType.Included:
             return self.calculateTheConstraintWithConstant(mask, rasterMap, None, 0)
+        if constraintType == ConstraintType.Undefined:
+            # Not-configured zone: neutral MIDDLE value (half of the constraint range),
+            # neither favouring (0) nor penalising (priority). Kept valid so it does not
+            # turn the aggregate into no-data (which would shrink the result, unlike
+            # Forbidden which is meant to).
+            return self.calculateTheConstraintWithConstant(mask, rasterMap, None, priority * 0.5)
         return None
+
+    ## @brief apply the Mandatory zones to the normalized aggregate by MULTIPLICATION.
+    #
+    # Pipeline (see run()): layers → addition → normalization → THIS → threshold.
+    # Each Mandatory zone becomes a 0/1 multiplier (0 = force the pixel to 0, "always
+    # kept"; 1 = leave the aggregate untouched); the zones are assembled by union and the
+    # aggregate is multiplied by the result. Multiplication makes no-data dominate, so a
+    # Forbidden zone (no-data in the aggregate) always wins over Mandatory. The multiplier
+    # is clipped to the Map, like every other operation. Each zone and their union are also
+    # exposed as visible output layers.
+    #
+    # @param rasterName normalized cumulative raster (0..1; no-data where Forbidden / not covered)
+    # @param rasterMap  rasterized map (data inside the working area, no-data outside)
+    # @return the name of the multiplied raster, or rasterName unchanged if no Mandatory zone
+    def applyMandatoryZones(self, rasterName, rasterMap):
+        from osgeo import gdal
+        import numpy as np
+
+        Debug.begin("SuricatesAlgo::applyMandatoryZones")
+
+        # Build one mask per Mandatory zone (value 0 where the zone applies, nodata elsewhere).
+        # Each zone is exposed as an output layer (so it is visible in the result), and the
+        # merged union of all Mandatory zones is exposed too — this merge is what forces 0.
+        masks = []
+        for constraint in self.constraints:
+            if constraint.typeIn == ConstraintType.Map:
+                continue
+            hasIn  = (constraint.typeIn  == ConstraintType.Mandatory)
+            hasOut = (constraint.typeOut == ConstraintType.Mandatory)
+            if not (hasIn or hasOut):
+                continue
+
+            bn = QFileInfo(constraint.name).baseName()
+            raster = self.rasterizeWithBuffer(constraint.name, None, constraint.buffer, False)
+            if hasIn:
+                # 0 inside geometry(+buffer), clipped to the map frame; nodata elsewhere.
+                mf = self.clip(raster, rasterMap, None)
+                self.outputs["mandatory-" + (bn + "_in" if hasOut else bn)] = mf
+                masks.append(mf)
+            if hasOut:
+                # 0 outside geometry, clipped to the map frame; nodata elsewhere.
+                mf = self.clip(self.invert(raster, None), rasterMap, None)
+                self.outputs["mandatory-" + (bn + "_out" if hasIn else bn)] = mf
+                masks.append(mf)
+
+        if not masks:
+            Debug.end("SuricatesAlgo::applyMandatoryZones (no mandatory zone)")
+            return rasterName
+
+        # Combine masks: 0 where any mandatory zone applies, nodata elsewhere.
+        combined = masks[0]
+        for m in masks[1:]:
+            combined = self.mergeLayers(combined, m, None)
+        # Expose the merged Mandatory zones as its own visible layer.
+        if len(masks) > 1:
+            self.outputs["mandatory-merged"] = combined
+
+        # 3. Build the 0/1 multiplier and MULTIPLY the aggregate by it.
+        #    multiplier = 1 inside the map, 0 in the Mandatory zones, no-data outside the map.
+        #    final = aggregate * multiplier, with no-data dominating — so a Forbidden zone
+        #    (no-data in the aggregate) always wins over Mandatory, and the result stays
+        #    clipped to the map, exactly like the other operations.
+        agg_ds = gdal.Open(rasterName)
+        if agg_ds is None:
+            Debug.error("applyMandatoryZones: impossible d'ouvrir " + str(rasterName))
+            Debug.end("SuricatesAlgo::applyMandatoryZones (error agg)")
+            return rasterName
+        agg_b = agg_ds.GetRasterBand(1)
+        agg = agg_b.ReadAsArray().astype(np.float32)
+        nodata = agg_b.GetNoDataValue()
+        if nodata is None: nodata = -9999.0
+
+        cmb_ds = gdal.Open(combined)
+        map_ds = gdal.Open(rasterMap)
+        if cmb_ds is None or map_ds is None:
+            Debug.error("applyMandatoryZones: impossible d'ouvrir le masque ou la Map")
+            agg_ds = None
+            Debug.end("SuricatesAlgo::applyMandatoryZones (error mask/map)")
+            return rasterName
+        cmb = cmb_ds.GetRasterBand(1).ReadAsArray().astype(np.float32)
+        cmb_nd = cmb_ds.GetRasterBand(1).GetNoDataValue()
+        if cmb_nd is None: cmb_nd = -9999.0
+        mp = map_ds.GetRasterBand(1).ReadAsArray().astype(np.float32)
+        mp_nd = map_ds.GetRasterBand(1).GetNoDataValue()
+        if mp_nd is None: mp_nd = -9999.0
+
+        if cmb.shape != agg.shape or mp.shape != agg.shape:
+            Debug.error("applyMandatoryZones: dimensions incompatibles — étape ignorée")
+            agg_ds = cmb_ds = map_ds = None
+            Debug.end("SuricatesAlgo::applyMandatoryZones (shape mismatch)")
+            return rasterName
+
+        map_valid = (mp != mp_nd)
+        mandatory = (cmb != cmb_nd)   # True where any Mandatory zone applies (already map-clipped)
+
+        # multiplier: 1 inside the map, 0 in the Mandatory zones, no-data outside the map (MAP mask)
+        multiplier = np.where(map_valid, np.float32(1.0), np.float32(nodata))
+        multiplier = np.where(mandatory & map_valid, np.float32(0.0), multiplier)
+
+        # aggregate * multiplier, with no-data dominating (Forbidden > Mandatory, and
+        # outside-map stays no-data)
+        final = np.where((agg == nodata) | (multiplier == nodata),
+                         np.float32(nodata), agg * multiplier)
+
+        outputName = self.getNewFileName('.tif')
+        driver = gdal.GetDriverByName('GTiff')
+        ds_out = driver.Create(outputName, agg_ds.RasterXSize, agg_ds.RasterYSize, 1, gdal.GDT_Float32)
+        ds_out.SetGeoTransform(agg_ds.GetGeoTransform())
+        ds_out.SetProjection(agg_ds.GetProjection())
+        band_out = ds_out.GetRasterBand(1)
+        band_out.SetNoDataValue(nodata)
+        band_out.WriteArray(final)
+        band_out.FlushCache()
+        ds_out = None
+        agg_ds = cmb_ds = map_ds = None
+
+        Debug.print("applyMandatoryZones: " + str(len(masks)) + " zone(s), multiplication -> " + outputName)
+        Debug.end("SuricatesAlgo::applyMandatoryZones")
+        return outputName
 
     ## @brief check that all constraint layers share the same CRS as the map layer,
     #  and that this CRS uses metres (not degrees).
@@ -949,6 +1081,11 @@ class SuricatesAlgo(QgsTask):
                 self.deleteTmpFile()
 
         rasterCumul = self.cummulateLayers(layers, None)
+        if rasterCumul is None:
+            # No summable constraint (e.g. every layer is Mandatory/Forbidden): start from a
+            # zero base over the working area so Mandatory zones can still be applied.
+            Debug.warning("run: aucune contrainte sommable — base à zéro (couche Map) utilisée")
+            rasterCumul = rasterMap
         rasterCumulFinal = self.normalizeRaster(rasterCumul, None, False, 1)
         if rasterCumulFinal is None:
             Debug.error(
@@ -956,6 +1093,14 @@ class SuricatesAlgo(QgsTask):
             self.outputs["raster"] = None
             self.outputs["threshold(" + str(threshold) + ")"] = None
             return False
+        # Force Mandatory zones to 0 (post-cumulation override) before thresholding.
+        # Wrapped so a failure here can never abort the whole computation.
+        try:
+            rasterCumulFinal = self.applyMandatoryZones(rasterCumulFinal, rasterMap)
+        except Exception:
+            import traceback
+            Debug.error("run: applyMandatoryZones a échoué — override Mandatory ignoré:\n"
+                        + traceback.format_exc())
         rasterCumulFinal2 = self.thresholdRaster(rasterCumulFinal, None, threshold)
 
         self.outputs["raster"] = rasterCumulFinal

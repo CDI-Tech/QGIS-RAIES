@@ -30,6 +30,11 @@ class ConstraintType(Enum):
     Map          = 5
     ## @brief Not yet configured — placeholder for newly added layers.
     Undefined    = 6
+    ## @brief Zone forced to value 0 on the final layer (always kept).
+    # Mandatory counterpart of Sanctuarized: where Sanctuarized forces No-Data
+    # (always excluded), Mandatory forces 0 (always retained) as a post-cumulation
+    # override, dominating any other constraint at the same location.
+    Mandatory    = 7
 
 
 ## @brief Structure holding all parameters for a single constraint layer.

@@ -437,8 +437,9 @@ class SuricatesInstance():
        if(type == ConstraintType.Included): return "Included"
        if(type == ConstraintType.Excluded): return "Excluded"
        if(type == ConstraintType.Sanctuarized): return "Sanctuarized"
+       if(type == ConstraintType.Mandatory): return "Mandatory"
        if(type == ConstraintType.Map): return "Map"
-       return "None"
+       return "Undefined"
 
     ## @brief convert text to the enum ConstraintType
     # @param typeName (string)
@@ -451,8 +452,11 @@ class SuricatesInstance():
         if(typeName == "Included"): return ConstraintType.Included
         if(typeName == "Excluded"): return ConstraintType.Excluded
         if(typeName == "Sanctuarized"): return ConstraintType.Sanctuarized
+        if(typeName == "Mandatory"): return ConstraintType.Mandatory
         if(typeName == "Map"): return ConstraintType.Map
-        return None
+        # Any empty/unknown value (legacy "None") becomes Undefined — a valid, visible
+        # "not configured" state, so an empty In/Out can no longer exist.
+        return ConstraintType.Undefined
 
     ## @brief create a configuration file for a project
     # @param project node of the project (QgsLayerTreeGroup)
@@ -474,7 +478,8 @@ class SuricatesInstance():
                           QgsField("typeIn", QVariant.String),
                           QgsField("typeOut", QVariant.String),
                           QgsField("buffer", QVariant.Int),
-                          QgsField("priority", QVariant.Double)])
+                          QgsField("priority", QVariant.Double),
+                          QgsField("resolution", QVariant.Int)])
 
         # Commit changes
         # this is required to update attributes
@@ -683,6 +688,107 @@ class SuricatesInstance():
         layer_shp.commitChanges()
         Debug.end("SuricatesInstance::appendConstraintInConfig")
         return True
+
+    ## @brief return the rasterization resolution (m) stored in the Map row of project_config
+    # @param projectName project name (string)
+    # @return resolution in metres (10, 100 or 1000); defaults to 100 for old configs
+    def getResolution(self, projectName):
+        project = self.getProject(projectName)
+        if project is None: return 100
+        config = self.getConfig(project)
+        if config is None: return 100
+        layer = QgsProject.instance().mapLayer(config.layerId())
+        if layer is None: return 100
+        idx = layer.fields().indexFromName("resolution")
+        for feature in layer.getFeatures():
+            if SuricatesInstance.ConstraintTypeFromString(feature["typeIn"]) == ConstraintType.Map:
+                if idx >= 0:
+                    val = feature["resolution"]
+                    if val in (10, 100, 1000):
+                        return val
+                return 100
+        return 100
+
+    ## @brief persist the rasterization resolution in the Map row of project_config
+    # @param projectName project name (string)
+    # @param resolution resolution value in metres (10, 100 or 1000)
+    # @return True on success
+    def setResolution(self, projectName, resolution):
+        project = self.getProject(projectName)
+        if project is None: return False
+        config = self.getConfig(project)
+        if config is None: return False
+        layer = QgsProject.instance().mapLayer(config.layerId())
+        if layer is None: return False
+        idx = layer.fields().indexFromName("resolution")
+        if idx < 0: return False
+        for feature in layer.getFeatures():
+            if SuricatesInstance.ConstraintTypeFromString(feature["typeIn"]) == ConstraintType.Map:
+                fid = feature.id()
+                layer.dataProvider().changeAttributeValues({fid: {idx: resolution}})
+                layer.updateExtents()
+                layer.commitChanges()
+                return True
+        return False
+
+    ## @brief replace the Map layer with the currently active QGIS layer
+    #
+    # Copies the active layer into the project group (like copyCurrentLayer) then
+    # updates the Map row's base name in project_config, preserving all other fields.
+    # @param projectName project name (string)
+    # @return True on success
+    def replaceMapLayer(self, projectName):
+        Debug.begin("SuricatesInstance::replaceMapLayer")
+        project = self.getProject(projectName)
+        if project is None:
+            Debug.end("SuricatesInstance::replaceMapLayer (error 1)")
+            return False
+
+        config = self.getConfig(project)
+        if config is None:
+            Debug.end("SuricatesInstance::replaceMapLayer (error 2)")
+            return False
+
+        constraints = self.getConstraintsFromConfig(project, config)
+        map_c = next((c for c in constraints if c.typeIn == ConstraintType.Map), None)
+        if map_c is None:
+            Debug.end("SuricatesInstance::replaceMapLayer (no Map constraint)")
+            return False
+
+        # Copy the currently active layer into the project group
+        new_node = self.copyCurrentLayer(projectName)
+        if new_node is None:
+            Debug.end("SuricatesInstance::replaceMapLayer (copy failed)")
+            return False
+
+        # Re-fetch config after copyCurrentLayer (blockSignals was released)
+        config = self.getConfig(project)
+        if config is None:
+            Debug.end("SuricatesInstance::replaceMapLayer (error 3)")
+            return False
+
+        # Update only the base name in the Map row
+        layer = QgsProject.instance().mapLayer(config.layerId())
+        if layer is None:
+            Debug.end("SuricatesInstance::replaceMapLayer (error 4)")
+            return False
+
+        base_idx = layer.fields().indexFromName("base")
+        if base_idx < 0:
+            Debug.end("SuricatesInstance::replaceMapLayer (no base field)")
+            return False
+
+        for feature in layer.getFeatures():
+            if feature["base"] == map_c.name:
+                fid = feature.id()
+                layer.dataProvider().changeAttributeValues({fid: {base_idx: new_node.name()}})
+                layer.updateExtents()
+                layer.commitChanges()
+                Debug.end("SuricatesInstance::replaceMapLayer (success)")
+                return True
+
+        Debug.end("SuricatesInstance::replaceMapLayer (Map row not found)")
+        return False
 
     ## @brief delete a constraint from project_config
     # @param projectName name of the project (string)
